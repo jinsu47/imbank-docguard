@@ -1,0 +1,86 @@
+# 공통 설정. 값은 환경 변수에서 읽고, 비밀 값의 기본값은 두지 않습니다. (ARCHITECTURE.md 7장, SECURITY.md 5장)
+# 로컬 실행(bootRun)은 local 프로필이 IM-BANK/.env 를 읽습니다. 테스트는 .env 를 읽지 않습니다.
+spring:
+  application:
+    name: docguard-server
+  autoconfigure:
+    # 기본 사용자와 임시 비밀번호를 만들어 로그에 출력하는 자동 설정을 끕니다. 계정은 M3 에서 DB 로 관리합니다.
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/docguard}
+    username: ${DB_USERNAME:docguard}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: ${APP_UPLOAD_MAX_MB:20}MB
+      max-request-size: 25MB
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        name: DOCGUARD_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${APP_COOKIE_SECURE:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+# Upstage Studio (ARCHITECTURE.md 4장, 7장)
+upstage:
+  # live: 실제 API 호출, replay: 2026-11-06 에 받아 둔 실제 응답을 돌려줌(로컬 개발 전용, 판정이 올린 문서와 무관)
+  mode: ${UPSTAGE_MODE:live}
+  api-key: ${UPSTAGE_API_KEY:}
+  project-id: ${UPSTAGE_PROJECT_ID:}
+  agent-id: ${UPSTAGE_AGENT_ID:}
+  config-id: ${UPSTAGE_CONFIG_ID:2}
+  base-url: ${UPSTAGE_BASE_URL:https://api.upstage.ai/v2}
+  poll-interval-ms: ${UPSTAGE_POLL_INTERVAL_MS:3000}
+  job-timeout-sec: ${UPSTAGE_JOB_TIMEOUT_SEC:600}
+  replay-dir: ${UPSTAGE_REPLAY_DIR:../eval/testmdfile/api-20261106-111210}
+  replay-step-ms: 1000
+  # Studio 노드 이름. 워크플로에서 노드 이름을 바꾸면 여기만 고칩니다. 못 찾으면 단계 종류(step_type)로 찾습니다.
+  steps:
+    parse: step_1_parse
+    parse-check: "Validate - 원문 인식 점검"
+    classify: step_2_classify
+    extract: "Information Extract - 공통민감정보 추출"
+    match: "Match - 공식근거 정책 대조"
+    extract-check: "Validate - 추출 결과 점검"
+    report: "Instruct - 민감정보 분석보고서"
+
+app:
+  encryption-key: ${APP_ENCRYPTION_KEY:}
+  storage-dir: ${APP_STORAGE_DIR:../storage}
+  retention-hours: ${APP_RETENTION_HOURS:168}
+  upload-max-mb: ${APP_UPLOAD_MAX_MB:20}
+  max-pdf-pages: 20
+  cookie-secure: ${APP_COOKIE_SECURE:false}
+  scheduling:
+    enabled: true

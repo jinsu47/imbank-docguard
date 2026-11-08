@@ -1,0 +1,10 @@
+# 로컬 개발 프로필. bootRun 의 기본 프로필입니다(build.gradle).
+# IM-BANK/.env 를 읽습니다. 작업 디렉터리가 server/ 일 때의 상대 경로입니다.
+# .env 는 IM-BANK 디렉터리에서 scripts/create-env.ps1 로 만듭니다.
+spring:
+  config:
+    import: optional:file:../.env[.properties]
+
+logging:
+  level:
+    com.imbank.docguard: DEBUG
