@@ -9,9 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.web.support.WebTestUtils;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 /**
  * 통합 테스트 공통 설정. PostgreSQL 16 컨테이너 하나를 모든 통합 테스트가 같이 씁니다.
@@ -98,5 +102,19 @@ public abstract class IntegrationTestBase {
     protected static RequestPostProcessor as(AuthUser user) {
         return authentication(new UsernamePasswordAuthenticationToken(user, null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.role().name()))));
+    }
+
+    /**
+     * 파일 업로드용 CSRF. 업로드는 헤더로만 토큰을 받으므로, 화면처럼 원래 토큰 값을 헤더로 보냅니다.
+     * csrf() 는 공유 필터의 저장소를 시험용으로 바꾸고 가공한 토큰을 파라미터로 넣으므로, 그 저장소에서 원래 값을 꺼내 씁니다.
+     */
+    protected static RequestPostProcessor csrfHeader() {
+        return request -> {
+            MockHttpServletRequest processed = csrf().postProcessRequest(request);
+            CsrfToken token = WebTestUtils.getCsrfTokenRepository(processed).loadToken(processed);
+            processed.removeParameter(token.getParameterName());
+            processed.addHeader(token.getHeaderName(), token.getToken());
+            return processed;
+        };
     }
 }

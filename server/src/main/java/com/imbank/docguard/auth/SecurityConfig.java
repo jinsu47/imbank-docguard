@@ -25,6 +25,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 
@@ -67,6 +68,7 @@ public class SecurityConfig {
                                             ObjectMapper objectMapper, UserRepository users,
                                             RateLimiter rateLimiter) throws Exception {
         http
+                .addFilterBefore(new MultipartGuardFilter(objectMapper), CsrfFilter.class)
                 // 세션 사용자의 현재 상태를 반영한 뒤(비활성화·역할 변경) 경로 규칙을 확인하고, 그다음 속도 제한을 셉니다.
                 .addFilterBefore(new SessionUserRefreshFilter(users, contextRepository), AuthorizationFilter.class)
                 .addFilterAfter(new ApiRateLimitFilter(rateLimiter, objectMapper), SessionUserRefreshFilter.class)
@@ -85,7 +87,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/analyses/*/review").hasAnyRole("REVIEWER", "ADMIN")
                         .requestMatchers("/api/analyses", "/api/analyses/**").hasAnyRole("INSPECTOR", "REVIEWER", "ADMIN")
                         .requestMatchers("/api/**").authenticated()
-                        // 배포용 정적 파일(React 빌드)은 해당 단계에서 공개 경로로 추가합니다.
+                        // API 가 아닌 GET 은 React 빌드(화면 코드)입니다. 문서·결과는 모두 위의 /api 규칙을 거칩니다.
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .anyRequest().denyAll())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

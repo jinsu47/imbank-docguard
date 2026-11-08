@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { AuthShell } from '@/features/auth/AuthShell'
 import { safeNext } from '@/features/auth/rules'
 import { ME_QUERY_KEY, useMe } from '@/features/auth/useMe'
+import { SIGNUP_ENABLED } from '@/lib/features'
 
 // 로그인 (F01). 실패 문구는 계정이 있든 없든 같습니다(SECURITY.md 2장).
 export default function LoginPage() {
@@ -89,15 +90,17 @@ export default function LoginPage() {
           {login.isPending ? '로그인 중…' : '로그인'}
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        계정이 없으면{' '}
-        <Link
-          to="/signup"
-          className="font-semibold text-foreground underline-offset-4 hover:underline"
-        >
-          회원가입
-        </Link>
-      </p>
+      {SIGNUP_ENABLED && (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          계정이 없으면{' '}
+          <Link
+            to="/signup"
+            className="font-semibold text-foreground underline-offset-4 hover:underline"
+          >
+            회원가입
+          </Link>
+        </p>
+      )}
     </AuthShell>
   )
 }

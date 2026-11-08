@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class EncryptionServiceTest {
 
     private static EncryptionService service(String key) {
-        return new EncryptionService(new AppProperties(key, "storage", 168, false));
+        return new EncryptionService(new AppProperties(key, "storage", 168, false, true));
     }
 
     @Test

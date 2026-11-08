@@ -47,6 +47,15 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+tasks.named('processResources') {
+    // 배포용 jar 에 React 빌드를 넣습니다: gradlew bootJar -PwebDist=../web/dist (deploy/deploy.sh)
+    if (project.hasProperty('webDist')) {
+        from(project.property('webDist')) {
+            into 'static'
+        }
+    }
+}
+
 tasks.named('bootRun') {
     // 로컬 실행 기본 프로필은 local 입니다. local 프로필이 IM-BANK/.env 를 읽습니다.
     systemProperty 'spring.profiles.active', System.getenv('SPRING_PROFILES_ACTIVE') ?: 'local'

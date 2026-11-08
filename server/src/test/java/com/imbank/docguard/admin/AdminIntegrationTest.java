@@ -141,7 +141,7 @@ class AdminIntegrationTest extends IntegrationTestBase {
         AuthUser inspector = createUser(Role.INSPECTOR);
         mockMvc.perform(multipart("/api/analyses")
                         .file(new MockMultipartFile("file", "고객이름_set02.pdf", "application/pdf", TestFixtures.pdf(1)))
-                        .with(as(inspector)).with(csrf()))
+                        .with(as(inspector)).with(csrfHeader()))
                 .andExpect(status().isAccepted());
 
         String body = mockMvc.perform(get("/api/admin/analyses").with(as(admin)))
@@ -158,7 +158,7 @@ class AdminIntegrationTest extends IntegrationTestBase {
         AuthUser inspector = createUser(Role.INSPECTOR);
         String created = mockMvc.perform(multipart("/api/analyses")
                         .file(new MockMultipartFile("file", "금융보안원_미션2_set02.pdf", "application/pdf", TestFixtures.pdf(1)))
-                        .with(as(inspector)).with(csrf()))
+                        .with(as(inspector)).with(csrfHeader()))
                 .andExpect(status().isAccepted())
                 .andReturn().getResponse().getContentAsString();
         UUID id = UUID.fromString(objectMapper.readTree(created).path("id").asText());

@@ -67,7 +67,7 @@ class AuthorizationMatrixTest extends IntegrationTestBase {
                     : post(path).contentType(MediaType.APPLICATION_JSON).content(body(path));
             default -> throw new IllegalArgumentException(method);
         };
-        request.with(csrf());
+        request.with(method.equals("POST") && path.equals("/api/analyses") ? csrfHeader() : csrf());
         if (role != null) {
             request.with(as(createUser(role, TestFixtures.password())));
         }

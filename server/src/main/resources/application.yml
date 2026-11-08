@@ -81,5 +81,7 @@ app:
   storage-dir: ${APP_STORAGE_DIR:../storage}
   retention-hours: ${APP_RETENTION_HOURS:168}
   cookie-secure: ${APP_COOKIE_SECURE:false}
+  # 공개 배포에서는 false 로 두어 미리 만든 계정만 쓰게 합니다.
+  signup-enabled: ${APP_SIGNUP_ENABLED:true}
   scheduling:
     enabled: true

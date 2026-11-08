@@ -1,5 +1,5 @@
 import { lazy, type ReactNode, Suspense } from 'react'
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 import type { Role } from '@/api/types'
 import { AppLayout } from '@/components/AppLayout'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -14,7 +14,7 @@ import MyAnalysesPage from '@/pages/MyAnalysesPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import ReviewsPage from '@/pages/ReviewsPage'
 import SignupPage from '@/pages/SignupPage'
-import { SHOW_ACCURACY } from '@/lib/features'
+import { SHOW_ACCURACY, SIGNUP_ENABLED } from '@/lib/features'
 
 // 분석 화면은 PDF 뷰어(react-pdf)를 포함해 크므로, 처음 열 때 따로 내려받습니다.
 const AnalysisPage = lazy(() => import('@/pages/AnalysisPage'))
@@ -29,7 +29,7 @@ function only(roles: Role[], page: ReactNode) {
 // 화면 목록은 USER_FLOW.md 2장을 따릅니다.
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
-  { path: '/signup', element: <SignupPage /> },
+  { path: '/signup', element: SIGNUP_ENABLED ? <SignupPage /> : <Navigate to="/login" replace /> },
   {
     element: (
       <RequireAuth>

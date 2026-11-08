@@ -152,7 +152,7 @@ flowchart LR
 ### 시연과 배포 (추후)
 
 - 시연은 노트북에서 `server/gradlew bootJar`로 만든 jar 하나와 Docker PostgreSQL로 실행합니다. 프런트엔드 빌드는 jar 안에 들어갑니다.
-- 외부 배포가 필요해지면 컨테이너 이미지 하나와 관리형 PostgreSQL 구성을 검토합니다. TBD: 배포 대상(클라우드 종류)과 도메인이 필요한지 정해야 합니다.
+- 외부 배포는 네이버클라우드 Ubuntu 서버 한 대에 합니다(2026-11-08 사용자 결정). Caddy가 HTTPS(`sslip.io` 주소, Let's Encrypt)를 맡고, jar 하나가 화면과 API를 함께 제공하며(`SpaResourceConfig`), PostgreSQL 16은 같은 서버에 설치합니다. 절차는 `deploy/README.md`에 있습니다.
 
 ## 7. 환경 변수
 
@@ -173,6 +173,7 @@ flowchart LR
 | `APP_STORAGE_DIR` | `../storage` | 아니요 | 원본 파일 저장 위치 |
 | `APP_RETENTION_HOURS` | `168` | 아니요 | 보관 기간(7일). TBD는 [PRD](./PRD.md) 9장 |
 | `APP_COOKIE_SECURE` | 로컬 `false`, 배포 `true` | 아니요 | |
+| `APP_SIGNUP_ENABLED` | `true`, 공개 배포 `false` | 아니요 | 회원가입을 받을지 |
 
 미리 만드는 계정(검토자·관리자·점검 담당자)의 비밀번호도 `scripts/seed-accounts`가 무작위로 만들어 로컬 파일(`.local/accounts.txt`, `.gitignore`)에만 적습니다.
 

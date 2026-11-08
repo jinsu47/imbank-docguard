@@ -89,6 +89,7 @@ IM-BANK/
 │       └── review/ audit/ storage/ common/
 ├── web/                                      ← React + Vite
 │   └── src/ pages/ features/ api/ components/
+├── deploy/                                   ← 네이버클라우드 배포 안내와 스크립트
 ├── studio/                                   ← Studio 워크플로 JSON, API 시험 스크립트
 ├── eval/                                     ← 정답표, 채점, 실행 결과 (비공개)
 ├── storage/                                  ← 원본 파일 (암호화, .gitignore)
@@ -199,6 +200,18 @@ IM-BANK/
 - 시연 정확도: `web/src/lib/features.ts`의 `SHOW_ACCURACY = false`로 메뉴와 경로를 숨김(주소로 들어가면 404 화면). 서버 API(`/api/demo/accuracy`)와 `AccuracyPage`는 남겨 둠.
 - 확인: 서버 테스트 74건, 웹 테스트 34건 통과. 자동 브라우저로 관리자가 다른 사람 문서 열기 → 원문 보기 → 검토 기록 → 삭제까지 통과했고 네 행동이 감사 기록에 남음(재생 모드 시험 분석 1건은 이 과정에서 삭제됨).
 
+**공개 배포 보안 수정 (2026-11-08):** 배포 후 점검에서 로그인 없이 보낸 multipart 본문이 거절 전에 서버 임시 폴더에 전부 저장되는 것을 발견해 고쳤습니다. `MultipartGuardFilter`, `SpaCsrfTokenRequestHandler`(multipart 는 헤더만), Caddy 본문 1MB 제한(업로드 주소 제외)입니다. 공개 서버에서 30MB 를 5가지 경로로 보내 임시 파일 0개, 0.1초 안에 거절됨을 확인했습니다. 서버 보안 업데이트를 적용해 재부팅했고 자동 보안 업데이트를 켰습니다(`linux-generic` 등 3개는 이미지에서 hold 되어 있어 건드리지 않음). 서버 테스트 84건 통과.
+- 테스트 주의: 업로드(`/api/analyses`)는 `csrf()` 대신 `IntegrationTestBase.csrfHeader()`를 씁니다.
+- 남은 보안 일: 코드 전체 보안 검토, 서버(Java) 라이브러리 취약점 검사, 서버의 `accounts.txt` 삭제, DB 백업, 공개 주소에서 로그인·실제 분석 확인.
+
+**네이버클라우드 배포 준비 (2026-11-08, 사용자 요청):** 새 서버에 올리고, `<IP>.sslip.io` 주소로 HTTPS 공개, 회원가입은 닫기로 정했습니다. 절차는 `deploy/README.md`, 설치 스크립트는 `deploy/`에 있습니다(미커밋). 2026-11-08 새 서버에 배포를 마쳤고, 주소와 접속 정보는 `.local/deploy.txt`에 있습니다.
+- 공개 주소 확인: 인증서 정상, HTTP→HTTPS 이동, 화면 경로 200, 인증 없는 API 401, 가입 403, 쿠키 Secure, 8080·5432 외부 차단, 서버에서 Upstage 파일 목록 200. 계정 로그인과 실제 문서 분석은 사용자 확인이 남아 있습니다.
+- 네이버클라우드 주의: 서버가 상권분석 챗봇과 같은 Subnet 이라 같은 Network ACL 을 씁니다. 재배포는 `bash deploy/deploy.sh <IP>`(Git Bash)이며, 이 PC 의 키에는 암호가 있어 Windows ssh 를 씁니다.
+- 서버: `SpaResourceConfig`(jar 안의 React 빌드 제공, 화면 경로는 index.html), `SecurityConfig`(API 가 아닌 GET 공개), `application-prod.yml`(127.0.0.1 바인딩, 프록시 헤더), `APP_SIGNUP_ENABLED`. jar 는 `gradlew bootJar -PwebDist=../web/dist`로 만듭니다.
+- 화면: `VITE_SIGNUP_ENABLED=false`로 빌드하면 가입 링크와 경로가 사라집니다.
+- 확인: 운영 jar 를 로컬 8090 에서 재생 모드로 띄워 가입 차단(화면·API 403), 로그인, set02 업로드, 주소로 바로 열기, PDF 렌더링을 확인했습니다. CSP 위반은 대화상자의 스크롤 잠금용 `<style>` 1건뿐이며, 배경 스크롤이 잠기지 않는 것 외에 영향이 없어 CSP 를 넓히지 않았습니다. 서버 테스트 80건, 웹 테스트 37건 통과.
+- 주의: 로컬에서 서버 두 대를 같은 DB 로 띄우지 않습니다. 두 스케줄러가 같은 분석을 함께 처리합니다.
+
 **업로드 크기·쪽수 제한 제거 (2026-11-08, 사용자 요청):** 실제 문서가 20쪽을 넘는 경우가 많아 20MB·20쪽 제한을 서버와 화면에서 없애고 형식 검사(시그니처, 빈 파일, 손상, 암호 PDF)만 남겼습니다(BR05). 이어서 사용자 요청으로 사용자별 진행 중 3건·시간당 30건 제한도 없앴습니다(BR06). 로그인·가입·원문 보기 제한과 그 밖의 API 제한(분당 300회)은 남아 있습니다. 함께 고친 것:
 - Studio 429: 업로드 단계에서 일시적인 오류(429·5xx·네트워크)는 3회로 끊지 않고 제한 시간까지 다시 시도합니다(`AnalysisJobProcessorSubmitTest`).
 - 제한 시간: `StudioService.jobTimeoutSec(pageCount)`가 기본값(600초)과 쪽수 × 60초 중 큰 값을 씁니다.
@@ -242,7 +255,7 @@ IM-BANK/
 1. 나머지 평가 문서 9건을 웹에서 실행해 10건 채점(F12 시연 정확도 화면의 근거).
 2. 시연 정확도 화면은 사용자 요청으로 사이트에서 숨겨 두었습니다(아래 참고). 다시 쓰려면 `web/src/lib/features.ts`의 `SHOW_ACCURACY`를 켭니다.
 3. P2 기능(사용자 결정 후): 가린 PDF 다운로드(F13), 여러 문서 한 번에 올리기(F14), 외부 배포(F15). 감사 기록 1년 보관 정리 작업도 아직 없습니다(보관 기간 TBD).
-4. 배포 단계에서 React 빌드를 Spring Boot 정적 파일로 넣을 때 `SecurityConfig`의 `anyRequest().denyAll()`에 정적 경로 공개 규칙을 추가해야 합니다.
+4. 네이버클라우드 배포는 끝났습니다. 공개 주소에서 로그인과 실제 문서 분석을 확인합니다.
 5. 문서와 다른 점을 기획 문서에 반영할지 사용자에게 확인: `UPSTAGE_MODE`·`UPSTAGE_REPLAY_DIR` 환경 변수, `POST /api/analyses/{id}/retry`, `GET /api/admin/analyses`, `GET /api/demo/accuracy`, 상태 조회기 위치(analysis 패키지), 암호화 결과 JSON 의 키 이름(영문).
 
 **사용자 결정 대기 (TBD):**

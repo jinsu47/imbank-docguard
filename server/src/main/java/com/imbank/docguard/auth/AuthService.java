@@ -3,6 +3,7 @@ package com.imbank.docguard.auth;
 import com.imbank.docguard.audit.AuditAction;
 import com.imbank.docguard.audit.AuditService;
 import com.imbank.docguard.common.ApiException;
+import com.imbank.docguard.common.AppProperties;
 import com.imbank.docguard.common.RateLimiter;
 import com.imbank.docguard.user.Role;
 import com.imbank.docguard.user.User;
@@ -45,12 +46,14 @@ public class AuthService {
     private final TransactionTemplate tx;
     private final SecurityContextRepository contextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
+    private final AppProperties properties;
     /** 없는 계정으로 로그인할 때도 같은 시간이 걸리도록 비교에 쓰는 해시 */
     private final String dummyHash;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, AuditService audit, RateLimiter rateLimiter,
                        TransactionTemplate tx, SecurityContextRepository contextRepository,
-                       CsrfTokenRepository csrfTokenRepository) {
+                       CsrfTokenRepository csrfTokenRepository, AppProperties properties) {
+        this.properties = properties;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.audit = audit;
@@ -62,6 +65,9 @@ public class AuthService {
     }
 
     public AuthUser signup(AuthDtos.SignupRequest request, String clientIp) {
+        if (!properties.signupEnabled()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "SIGNUP_CLOSED", "회원가입을 받지 않습니다. 관리자에게 계정을 요청해 주세요.");
+        }
         rateLimiter.check("signup-ip:" + clientIp, 10, Duration.ofHours(1), "가입 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
         String email = User.normalizeEmail(request.email());
         PasswordPolicy.validate(request.password(), email);

@@ -1,0 +1,9 @@
+# 운영 서버 설정 (deploy/). 값은 systemd 의 EnvironmentFile(/etc/docguard/docguard.env)에서 읽습니다.
+server:
+  # HTTPS 는 앞단 Caddy 가 맡습니다. 앱은 같은 서버의 Caddy 에서만 접속할 수 있습니다.
+  address: 127.0.0.1
+  # 로그인·가입 속도 제한이 실제 접속 IP 기준으로 동작하고, 요청을 HTTPS 로 인식하도록 프록시 헤더를 읽습니다.
+  forward-headers-strategy: native
+
+app:
+  seed-output: ${APP_SEED_OUTPUT:/var/lib/docguard/accounts.txt}

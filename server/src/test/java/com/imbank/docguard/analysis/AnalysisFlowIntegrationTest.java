@@ -61,7 +61,7 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
     private UUID upload(AuthUser user, String filename, byte[] content) throws Exception {
         String body = mockMvc.perform(multipart("/api/analyses")
                         .file(new MockMultipartFile("file", filename, "application/pdf", content))
-                        .with(as(user)).with(csrf()))
+                        .with(as(user)).with(csrfHeader()))
                 .andExpect(status().isAccepted())
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(objectMapper.readTree(body).path("id").asText());
@@ -302,7 +302,7 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
         AuthUser inspector = createUser(Role.INSPECTOR);
         mockMvc.perform(multipart("/api/analyses")
                         .file(new MockMultipartFile("file", "fake.pdf", "application/pdf", "hello".getBytes()))
-                        .with(as(inspector)).with(csrf()))
+                        .with(as(inspector)).with(csrfHeader()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE"));
 

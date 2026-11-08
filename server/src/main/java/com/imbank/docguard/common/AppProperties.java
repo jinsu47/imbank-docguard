@@ -9,11 +9,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param storageDir     원본 파일 저장 위치
  * @param retentionHours 원본·상세 결과 보관 시간
  * @param cookieSecure   세션·CSRF 쿠키에 Secure 를 붙일지
+ * @param signupEnabled  회원가입을 받을지. 공개 배포에서는 끕니다.
  */
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(
         String encryptionKey,
         String storageDir,
         int retentionHours,
-        boolean cookieSecure) {
+        boolean cookieSecure,
+        boolean signupEnabled) {
 }
