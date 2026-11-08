@@ -166,13 +166,12 @@ flowchart LR
 | `UPSTAGE_CONFIG_ID` | `2` | 아니요 | v2.5 설정 버전 |
 | `UPSTAGE_BASE_URL` | `https://api.upstage.ai/v2` | 아니요 | |
 | `UPSTAGE_POLL_INTERVAL_MS` | `3000` | 아니요 | 상태 조회 간격 |
-| `UPSTAGE_JOB_TIMEOUT_SEC` | `600` | 아니요 | 이 시간을 넘으면 실패 처리 |
+| `UPSTAGE_JOB_TIMEOUT_SEC` | `600` | 아니요 | 기다리는 시간의 최솟값. 쪽수 × 60초가 더 크면 그 시간까지 기다리고, 넘으면 실패 처리 |
 | `DB_URL` · `DB_USERNAME` | `jdbc:postgresql://localhost:5434/docguard` · `docguard` | 아니요 | |
 | `DB_PASSWORD` | 스크립트가 생성 | 예 | |
 | `APP_ENCRYPTION_KEY` | 스크립트가 생성(32바이트 Base64) | 예 | 원본 파일과 결과 암호화 키 |
 | `APP_STORAGE_DIR` | `../storage` | 아니요 | 원본 파일 저장 위치 |
 | `APP_RETENTION_HOURS` | `168` | 아니요 | 보관 기간(7일). TBD는 [PRD](./PRD.md) 9장 |
-| `APP_UPLOAD_MAX_MB` | `20` | 아니요 | |
 | `APP_COOKIE_SECURE` | 로컬 `false`, 배포 `true` | 아니요 | |
 
 미리 만드는 계정(검토자·관리자·점검 담당자)의 비밀번호도 `scripts/seed-accounts`가 무작위로 만들어 로컬 파일(`.local/accounts.txt`, `.gitignore`)에만 적습니다.
@@ -181,13 +180,13 @@ flowchart LR
 
 | 상황 | 대응 |
 |---|---|
-| Studio 응답이 늦음 | 서버가 작업을 비동기로 조회하고, 화면은 서버의 분석 상태를 2초마다 조회합니다. `UPSTAGE_JOB_TIMEOUT_SEC`를 넘으면 `FAILED`(`STUDIO_TIMEOUT`)로 바꿉니다. |
-| Studio 429 (호출 한도) | 지수 백오프로 최대 3회 재시도하고, 그래도 실패하면 `FAILED`로 바꿉니다. 응답의 재시도 시각 헤더를 우선합니다. |
+| Studio 응답이 늦음 | 서버가 작업을 비동기로 조회하고, 화면은 서버의 분석 상태를 2초마다 조회합니다. 제한 시간(`UPSTAGE_JOB_TIMEOUT_SEC`와 쪽수 × 60초 중 큰 값)을 넘으면 `FAILED`(`STUDIO_TIMEOUT`)로 바꿉니다. |
+| Studio 429 (호출 한도) | 제한 시간(`UPSTAGE_JOB_TIMEOUT_SEC`와 쪽수 × 60초 중 큰 값)까지 다음 조회 주기에 다시 시도하고, 그래도 실패하면 `FAILED`로 바꿉니다. |
 | Studio 5xx, 네트워크 오류 | 같은 방식으로 재시도합니다. 업로드 단계에서 실패하면 Studio에 남은 파일이 없도록 정리합니다. |
 | 작업 상태 `failed` | 분석을 `FAILED`(`STUDIO_JOB_FAILED`)로 바꾸고, 사용자에게 다시 실행 버튼을 보여 줍니다. |
 | 서버가 재시작됨 | 진행 중 상태(`QUEUED`, `RUNNING`)는 DB에 있으므로, 재시작 후 스케줄러가 이어서 조회합니다. |
 | 보고서 해석 실패 | 등급 `UNKNOWN`, 사람 검토 필요로 저장하고 검토 대기열에 넣습니다. |
 | 점검 단계가 red | Studio 판정을 그대로 보여 주고(잠정 등급), 사람 검토 사유에 점검 결과를 표시합니다. |
 | 같은 파일을 다시 올림 | Studio가 이전 결과를 재사용할 수 있습니다(`cache_hit`). 결과는 같으므로 문제는 없지만, 재현성 측정에는 쓰지 않습니다. |
-| 동시 분석 | 사용자당 진행 중 분석 3건, 시간당 30건으로 제한합니다. 시연 규모에서는 서버 한 대로 충분합니다. |
+| 동시 분석 | 사용자별 진행 건수와 시간당 건수를 제한하지 않습니다(2026-11-08 사용자 결정). 스케줄러 하나가 분석을 순서대로 처리하며, 시연 규모에서는 서버 한 대로 충분합니다. |
 | 워크플로 설정 변경 | 서버는 항상 `UPSTAGE_CONFIG_ID`를 보내고, 분석마다 사용한 Config ID를 저장합니다. 설정을 바꾸려면 환경 변수만 바꿉니다. |

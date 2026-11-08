@@ -15,6 +15,9 @@ public class StudioService {
     /** 재생 모드로 만든 분석의 studio_agent_id 값. 화면이 "재생 모드" 표시를 붙이는 기준입니다. */
     public static final String REPLAY_AGENT_ID = "REPLAY";
 
+    /** 쪽당 기다릴 시간(초). 1~2쪽 문서가 실측 29~67초 걸린 것을 넉넉히 잡은 값입니다. */
+    static final long JOB_TIMEOUT_SEC_PER_PAGE = 60;
+
     private static final Logger log = LoggerFactory.getLogger(StudioService.class);
 
     private final StudioGateway gateway;
@@ -51,8 +54,10 @@ public class StudioService {
         return properties.pollIntervalMs();
     }
 
-    public long jobTimeoutSec() {
-        return properties.jobTimeoutSec();
+    /** 이 분석을 기다릴 시간(초). 긴 문서는 처리 시간도 늘어나므로, 쪽당 시간을 곱한 값이 기본값보다 크면 그 값을 씁니다. */
+    public long jobTimeoutSec(Integer pageCount) {
+        long byPages = (pageCount == null ? 1L : pageCount) * JOB_TIMEOUT_SEC_PER_PAGE;
+        return Math.max(properties.jobTimeoutSec(), byPages);
     }
 
     /**

@@ -50,7 +50,6 @@ $values = @{
     'APP_ENCRYPTION_KEY'       = $encryptionKey
     'APP_STORAGE_DIR'          = '../storage'
     'APP_RETENTION_HOURS'      = '168'
-    'APP_UPLOAD_MAX_MB'        = '20'
     'APP_COOKIE_SECURE'        = 'false'
 }
 

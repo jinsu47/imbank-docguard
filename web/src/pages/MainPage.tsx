@@ -204,8 +204,11 @@ function UserMain({ role }: { role: Role }) {
         <section className="bg-white px-6 py-5 text-sm leading-relaxed">
           <h2 className="mb-3 font-bold">이렇게 사용합니다</h2>
           <ol className="grid list-decimal gap-2 pl-5">
-            <li>PDF, JPG, PNG 문서를 한 건 올립니다(20MB, 20쪽 이하).</li>
-            <li>문서 인식부터 보고서 작성까지 자동으로 진행하며, 보통 1분 안에 끝납니다.</li>
+            <li>PDF, JPG, PNG 문서를 한 건 올립니다.</li>
+            <li>
+              문서 인식부터 보고서 작성까지 자동으로 진행합니다. 1~2쪽 문서는 보통 1분 안에 끝나고,
+              쪽수가 많으면 더 걸립니다.
+            </li>
             <li>
               위험 등급과 사람 검토 여부를 확인하고, 항목이나 근거 번호를 눌러 문서 위치를 확대해
               봅니다.

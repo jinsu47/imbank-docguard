@@ -13,8 +13,6 @@ public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
     /** 내 분석 목록. 항상 owner_id 조건을 넣습니다(SECURITY.md 3장). */
     List<Analysis> findTop100ByOwnerIdOrderByCreatedAtDesc(Long ownerId);
 
-    long countByOwnerIdAndStatusIn(Long ownerId, Collection<AnalysisStatus> statuses);
-
     List<Analysis> findByStatusInOrderByCreatedAtAsc(Collection<AnalysisStatus> statuses);
 
     List<Analysis> findByStudioFileIdIsNotNullAndStatusIn(Collection<AnalysisStatus> statuses);

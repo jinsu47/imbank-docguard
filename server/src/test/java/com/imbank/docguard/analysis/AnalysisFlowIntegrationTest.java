@@ -297,7 +297,7 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("업로드 검증: 형식은 시그니처로, 쪽수 제한, 진행 중 3건 제한")
+    @DisplayName("업로드 검증: 형식은 시그니처로 확인하고, 진행 중 건수는 제한하지 않는다(BR06)")
     void uploadValidation() throws Exception {
         AuthUser inspector = createUser(Role.INSPECTOR);
         mockMvc.perform(multipart("/api/analyses")
@@ -305,19 +305,44 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
                         .with(as(inspector)).with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE"));
-        mockMvc.perform(multipart("/api/analyses")
-                        .file(new MockMultipartFile("file", "long.pdf", "application/pdf", TestFixtures.pdf(21)))
-                        .with(as(inspector)).with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("TOO_MANY_PAGES"));
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 5; i++) {
             upload(inspector, "doc" + i + ".pdf", TestFixtures.pdf(1));
         }
-        mockMvc.perform(multipart("/api/analyses")
-                        .file(new MockMultipartFile("file", "doc4.pdf", "application/pdf", TestFixtures.pdf(1)))
-                        .with(as(inspector)).with(csrf()))
-                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    @DisplayName("업로드 검증(BR05): 파일 크기와 쪽수는 제한하지 않는다")
+    void noSizeOrPageLimit() throws Exception {
+        AuthUser inspector = createUser(Role.INSPECTOR);
+        UUID longPdf = upload(inspector, "long.pdf", TestFixtures.pdf(21));
+        assertThat(jdbc.queryForObject("SELECT page_count FROM analyses WHERE id = ?", Integer.class, longPdf))
+                .isEqualTo(21);
+
+        byte[] largeImage = new byte[25 * 1024 * 1024];
+        largeImage[0] = (byte) 0xFF;
+        largeImage[1] = (byte) 0xD8;
+        largeImage[2] = (byte) 0xFF;
+        UUID large = upload(inspector, "large.jpg", largeImage);
+        assertThat(jdbc.queryForObject("SELECT file_size FROM analyses WHERE id = ?", Long.class, large))
+                .isEqualTo(largeImage.length);
+    }
+
+    @Test
+    @DisplayName("제한 시간은 쪽수에 비례해 늘어나, 긴 문서는 같은 시간이 지나도 실패하지 않는다")
+    void timeoutGrowsWithPages() throws Exception {
+        AuthUser inspector = createUser(Role.INSPECTOR);
+        UUID shortDoc = upload(inspector, "금융보안원_미션2_set02.pdf", TestFixtures.pdf(1));
+        UUID longDoc = upload(inspector, "금융보안원_미션2_set02.pdf", TestFixtures.pdf(21));
+        processor.processAll();
+        // 기본 제한 600초는 넘었지만, 21쪽 문서의 제한(21 × 60 = 1,260초)은 넘지 않은 상태입니다.
+        jdbc.update("UPDATE analyses SET submitted_at = now() - interval '700 seconds' WHERE id IN (?, ?)", shortDoc, longDoc);
+        processor.processAll();
+
+        assertThat(detail(inspector, shortDoc).path("summary").path("status").asText()).isEqualTo("FAILED");
+        assertThat(jdbc.queryForObject("SELECT error_code FROM analyses WHERE id = ?", String.class, shortDoc))
+                .isEqualTo("STUDIO_TIMEOUT");
+        assertThat(detail(inspector, longDoc).path("summary").path("status").asText()).isEqualTo("COMPLETED");
     }
 
     @Test

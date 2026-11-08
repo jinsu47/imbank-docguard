@@ -199,6 +199,13 @@ IM-BANK/
 - 시연 정확도: `web/src/lib/features.ts`의 `SHOW_ACCURACY = false`로 메뉴와 경로를 숨김(주소로 들어가면 404 화면). 서버 API(`/api/demo/accuracy`)와 `AccuracyPage`는 남겨 둠.
 - 확인: 서버 테스트 74건, 웹 테스트 34건 통과. 자동 브라우저로 관리자가 다른 사람 문서 열기 → 원문 보기 → 검토 기록 → 삭제까지 통과했고 네 행동이 감사 기록에 남음(재생 모드 시험 분석 1건은 이 과정에서 삭제됨).
 
+**업로드 크기·쪽수 제한 제거 (2026-11-08, 사용자 요청):** 실제 문서가 20쪽을 넘는 경우가 많아 20MB·20쪽 제한을 서버와 화면에서 없애고 형식 검사(시그니처, 빈 파일, 손상, 암호 PDF)만 남겼습니다(BR05). 이어서 사용자 요청으로 사용자별 진행 중 3건·시간당 30건 제한도 없앴습니다(BR06). 로그인·가입·원문 보기 제한과 그 밖의 API 제한(분당 300회)은 남아 있습니다. 함께 고친 것:
+- Studio 429: 업로드 단계에서 일시적인 오류(429·5xx·네트워크)는 3회로 끊지 않고 제한 시간까지 다시 시도합니다(`AnalysisJobProcessorSubmitTest`).
+- 제한 시간: `StudioService.jobTimeoutSec(pageCount)`가 기본값(600초)과 쪽수 × 60초 중 큰 값을 씁니다.
+- 문서 칸: 모든 쪽을 고해상도로 한꺼번에 그리면 브라우저 메모리가 부족해지므로, 쪽 크기만 먼저 읽어 자리를 잡고 `LazyPdfPage`가 칸에서 1,200px 안에 들어온 쪽만 그립니다. 가림 상자(`Marks`)는 모든 쪽에 있어 위치 이동이 그대로 됩니다. `react-pdf` 11의 `Page`는 기본으로 Suspense 를 쓰므로 쪽마다 `Suspense` 경계를 둡니다(없으면 새 쪽을 그릴 때 화면 전체가 대기 화면으로 바뀌고 스크롤이 초기화됨).
+- 확인: 서버 테스트 79건, 웹 테스트 37건 통과. 재생 모드 서버와 자동 브라우저로 30MB·60쪽 PDF 를 올려 처리 완료, 한 번에 3~5쪽만 그림, 가로 쪽 비율 일치, 50쪽에서 1쪽 항목을 골랐을 때 칸 정중앙으로 이동함을 확인했습니다. 실제 Studio 로 긴 문서를 돌려 보지는 않았습니다.
+- 남은 한계: Studio 한도(500MB, 1,000쪽)를 넘으면 실패합니다. 서버는 파일을 메모리에 올려 처리합니다. v2.5 는 1~2쪽 문서로만 검증했으므로 긴 문서의 판정 품질·시간·사용량은 확인이 필요합니다.
+
 **API 키 연동 전 구현 결과 (2026-11-08 확인):**
 
 - 백엔드
@@ -206,7 +213,7 @@ IM-BANK/
   - `auth`: 가입(항상 INSPECTOR), 세션 로그인(세션 ID 재발급, CSRF 토큰 재발급), 5회 실패 15분 잠금(423 `ACCOUNT_LOCKED`), 로그아웃, `/me`. CSRF 는 `XSRF-TOKEN` 쿠키 + `X-XSRF-TOKEN` 헤더(`SpaCsrfTokenRequestHandler`).
   - `studio`: `StudioHttpClient`(업로드 시 원래 파일 이름 대신 `document.pdf` 전송, 오류는 상태·code 만 로그), `ReplayStudioGateway`(`eval/testmdfile/api-20261106-111210/*_raw.json` 재생, 파일 이름에 `set02`·`set10`이 있으면 그 응답, 단계별 진행 흉내), `StudioResultMapper`.
   - `result`: `ReportParser`(compare.py 와 같은 규칙, 실패 시 UNKNOWN), `DisplayValueMasker`(BR09), `AnalysisResultService`(원문값·보고서를 암호화 저장, 결과 응답은 표시값만).
-  - `analysis`: 업로드 검증(시그니처, 20MB, 20쪽, 암호 PDF 거부, 진행 중 3건, 시간당 30건), `AnalysisJobProcessor`(UPLOADING→QUEUED→RUNNING→COMPLETED/FAILED, 재시도, 시간 초과, Studio 파일 삭제와 재삭제), `RetentionJob`(매시간 PURGED), 원본 파일(no-store, 세션당 첫 열람 감사), 원문 보기(사유 필수, 감사), 삭제, 다시 실행(`POST /api/analyses/{id}/retry`, ARCHITECTURE 5장에 없던 경로).
+  - `analysis`: 업로드 검증(시그니처, 암호 PDF 거부, 크기·쪽수·건수 제한 없음), `AnalysisJobProcessor`(UPLOADING→QUEUED→RUNNING→COMPLETED/FAILED, 재시도, 시간 초과, Studio 파일 삭제와 재삭제), `RetentionJob`(매시간 PURGED), 원본 파일(no-store, 세션당 첫 열람 감사), 원문 보기(사유 필수, 감사), 삭제, 다시 실행(`POST /api/analyses/{id}/retry`, ARCHITECTURE 5장에 없던 경로).
   - `review`: 대기열(자기 분석 제외), 검토 기록(이의는 사유 필수, 한 번만, 등급은 바꾸지 않음).
   - `user/AccountSeeder` + `scripts/seed-accounts.*`: inspector·inspector2·reviewer·admin `@docguard.local` 계정, 비밀번호는 `.local/accounts.txt`에만 기록(이미 만듦).
   - 테스트 62건 통과, SKIPPED 없음: 보고서 파서(v2.5 10건 정답 일치 + UNKNOWN 5종), 변환기(set02·set10 원본 응답), HTTP 클라이언트(가짜 서버, 헤더·본문·오류), 가림 규칙, 암호화, 인증 흐름, 분석 흐름(결과 응답에 원문값 없음 확인), `AuthorizationMatrixTest`(14개 경로 × 4역할).

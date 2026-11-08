@@ -8,8 +8,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param encryptionKey  AES-256 키(32바이트 Base64). 기본값을 두지 않으며, 없으면 서버가 시작되지 않습니다.
  * @param storageDir     원본 파일 저장 위치
  * @param retentionHours 원본·상세 결과 보관 시간
- * @param uploadMaxMb    업로드 최대 크기(MB)
- * @param maxPdfPages    PDF 최대 쪽수
  * @param cookieSecure   세션·CSRF 쿠키에 Secure 를 붙일지
  */
 @ConfigurationProperties(prefix = "app")
@@ -17,7 +15,5 @@ public record AppProperties(
         String encryptionKey,
         String storageDir,
         int retentionHours,
-        int uploadMaxMb,
-        int maxPdfPages,
         boolean cookieSecure) {
 }

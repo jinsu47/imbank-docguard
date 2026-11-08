@@ -46,7 +46,6 @@ umask 077
       APP_ENCRYPTION_KEY=) echo "APP_ENCRYPTION_KEY=$encryption_key" ;;
       APP_STORAGE_DIR=) echo "APP_STORAGE_DIR=../storage" ;;
       APP_RETENTION_HOURS=) echo "APP_RETENTION_HOURS=168" ;;
-      APP_UPLOAD_MAX_MB=) echo "APP_UPLOAD_MAX_MB=20" ;;
       APP_COOKIE_SECURE=) echo "APP_COOKIE_SECURE=false" ;;
       *) printf '%s\n' "$line" ;;
     esac

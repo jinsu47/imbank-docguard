@@ -38,7 +38,6 @@ import java.util.UUID;
 public class AnalysisService {
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
-    static final int MAX_IN_PROGRESS = 3;
     private static final String VIEWED_FILES_SESSION_KEY = "docguard.viewedFiles";
 
     private final AnalysisRepository analyses;
@@ -75,9 +74,6 @@ public class AnalysisService {
     @Transactional
     public UUID create(AuthUser user, String originalFilename, byte[] content) {
         UploadValidator.ValidatedFile file = validator.validate(content);
-        requireInProgressCapacity(user);
-        rateLimiter.check("analysis-create:" + user.id(), 30, Duration.ofHours(1),
-                "분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
 
         String storedPath = storage.save(content);
         Instant now = Instant.now();
@@ -94,12 +90,6 @@ public class AnalysisService {
                 Map.of("contentType", file.contentType(), "pageCount", file.pageCount()));
         log.info("분석 생성: id={} pages={}", analysis.getId(), file.pageCount());
         return analysis.getId();
-    }
-
-    private void requireInProgressCapacity(AuthUser user) {
-        if (analyses.countByOwnerIdAndStatusIn(user.id(), AnalysisStatus.IN_PROGRESS) >= MAX_IN_PROGRESS) {
-            throw ApiException.tooManyRequests("진행 중인 분석이 끝난 뒤 다시 시도해 주세요.");
-        }
     }
 
     /** 경로를 떼고 길이를 줄입니다. 화면 표시용으로만 암호화해 저장합니다. */
@@ -219,7 +209,6 @@ public class AnalysisService {
         if (a.getStoredPath() == null) {
             throw new ApiException(HttpStatus.GONE, "PURGED", "원본이 삭제되어 다시 실행할 수 없습니다.");
         }
-        requireInProgressCapacity(user);
         if (a.getStudioFileId() != null) {
             studio.deleteFileQuietly(a.getStudioFileId());
         }

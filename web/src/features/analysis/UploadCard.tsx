@@ -1,7 +1,6 @@
 import { FileUp } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { MAX_UPLOAD_MB } from './uploadRules'
 import { useUpload } from './useUpload'
 
 /** 내 분석 화면의 문서 올리기 (F02) */
@@ -18,8 +17,7 @@ export function UploadCard() {
           <div>
             <h2 className="text-lg font-bold">문서 올리기</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              PDF, JPG, PNG 한 건 · {MAX_UPLOAD_MB}MB, 20쪽 이하 · 대회가 제공한 합성 문서만 올려
-              주세요.
+              PDF, JPG, PNG 한 건 · 대회가 제공한 합성 문서만 올려 주세요.
             </p>
           </div>
         </div>

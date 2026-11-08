@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>UPLOADING: 원본을 Studio 에 올리고 작업을 만들어 QUEUED 로 바꿉니다.</li>
  *   <li>QUEUED·RUNNING: 작업을 조회해 진행 단계를 갱신하고, 끝나면 결과를 저장합니다.</li>
- *   <li>429·5xx·네트워크 오류는 다음 주기에 다시 시도하고, 3회 연속 실패하거나 시간이 초과되면 FAILED 로 바꿉니다.</li>
+ *   <li>429·5xx·네트워크 오류는 제한 시간까지 다음 주기에 다시 시도하고, 그 밖의 오류는 FAILED 로 바꿉니다(작업 조회는 3회 연속 실패 시).</li>
  *   <li>작업이 끝나면(완료·실패 모두) Studio 에 올린 파일을 지웁니다(BR07). 지우지 못하면 다음 주기에 다시 지웁니다.</li>
  * </ul>
  * DB 에 상태가 있으므로 서버가 다시 시작되어도 이어서 처리합니다. 서버 한 대를 전제로 합니다.
@@ -93,7 +93,10 @@ public class AnalysisJobProcessor {
             failures.remove(a.getId());
             log.info("Studio 작업 생성: id={} job={}", a.getId(), submission.jobId());
         } catch (StudioException e) {
-            if (e.retryable() && countFailure(a.getId()) < MAX_ATTEMPTS) {
+            // 한꺼번에 많이 올리면 Studio 가 429 로 거절할 수 있으므로, 일시적인 오류는 제한 시간까지 다음 주기에 다시 시도합니다.
+            // 기준은 UPLOADING 이 된 시각(updatedAt)입니다. 생성 시각을 쓰면 오래된 분석을 다시 실행할 때 바로 시간 초과가 됩니다.
+            boolean withinTimeout = Duration.between(a.getUpdatedAt(), now).getSeconds() <= studio.jobTimeoutSec(a.getPageCount());
+            if (e.retryable() && withinTimeout) {
                 log.warn("Studio 업로드 재시도 예정: id={} code={}", a.getId(), e.code());
                 return;
             }
@@ -106,7 +109,7 @@ public class AnalysisJobProcessor {
     private void poll(Analysis a) {
         Instant now = clock.instant();
         Instant started = a.getSubmittedAt() != null ? a.getSubmittedAt() : a.getCreatedAt();
-        if (Duration.between(started, now).getSeconds() > studio.jobTimeoutSec()) {
+        if (Duration.between(started, now).getSeconds() > studio.jobTimeoutSec(a.getPageCount())) {
             fail(a, "STUDIO_TIMEOUT", now);
             return;
         }

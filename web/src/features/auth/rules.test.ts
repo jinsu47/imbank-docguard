@@ -20,12 +20,10 @@ describe('passwordProblem', () => {
 })
 
 describe('uploadProblem', () => {
-  it('형식과 크기를 미리 확인한다', () => {
+  it('형식과 빈 파일만 미리 확인하고, 크기는 제한하지 않는다', () => {
     expect(uploadProblem({ name: 'a.pdf', size: 10, type: 'application/pdf' })).toBeNull()
     expect(uploadProblem({ name: 'a.docx', size: 10, type: 'application/msword' })).not.toBeNull()
     expect(uploadProblem({ name: 'a.pdf', size: 0, type: 'application/pdf' })).not.toBeNull()
-    expect(
-      uploadProblem({ name: 'a.png', size: 21 * 1024 * 1024, type: 'image/png' }),
-    ).not.toBeNull()
+    expect(uploadProblem({ name: 'a.png', size: 800 * 1024 * 1024, type: 'image/png' })).toBeNull()
   })
 })

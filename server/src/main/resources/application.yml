@@ -24,8 +24,9 @@ spring:
     locations: classpath:db/migration
   servlet:
     multipart:
-      max-file-size: ${APP_UPLOAD_MAX_MB:20}MB
-      max-request-size: 25MB
+      # 업로드 크기는 제한하지 않습니다(BR05). -1 은 무제한입니다.
+      max-file-size: -1
+      max-request-size: -1
   jackson:
     default-property-inclusion: non_null
 
@@ -79,8 +80,6 @@ app:
   encryption-key: ${APP_ENCRYPTION_KEY:}
   storage-dir: ${APP_STORAGE_DIR:../storage}
   retention-hours: ${APP_RETENTION_HOURS:168}
-  upload-max-mb: ${APP_UPLOAD_MAX_MB:20}
-  max-pdf-pages: 20
   cookie-secure: ${APP_COOKIE_SECURE:false}
   scheduling:
     enabled: true
