@@ -1,0 +1,246 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans:
+    'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-green: var(--brand-green);
+  --color-brand-slate: var(--brand-slate);
+  --color-brand-ink: var(--brand-ink);
+  --color-tile-blue: var(--tile-blue);
+  --color-tile-sky: var(--tile-sky);
+  --color-tile-mint: var(--tile-mint);
+  --color-tile-teal: var(--tile-teal);
+  --color-tile-gray: var(--tile-gray);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* 서비스 색: 진한 남색과 녹색을 축으로, 각진 색면 타일과 선으로 화면을 나눕니다. */
+  --brand-navy: #2b3d7d;
+  --brand-green: #238d52;
+  --brand-slate: #454b57;
+  --brand-ink: #111111;
+  --tile-blue: #3f6fb5;
+  --tile-sky: #d6e6ee;
+  --tile-mint: #cfe5df;
+  --tile-teal: #1a8270;
+  --tile-gray: #f1f2f5;
+  /* 상단 메뉴 높이. 분석 화면의 고정 칸이 이 아래에 붙습니다. */
+  --header-h: 4.5rem;
+
+  --background: #ffffff;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #2b3d7d;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f6;
+  --secondary-foreground: #1d2a58;
+  --muted: #f7f7fb;
+  --muted-foreground: #5f6470;
+  --accent: #eef0f6;
+  --accent-foreground: #1d2a58;
+  --destructive: #c8323f;
+  --border: #e5e5e5;
+  --input: #d4d4d8;
+  --ring: #2b3d7d;
+  --chart-1: #2b3d7d;
+  --chart-2: #238d52;
+  --chart-3: #3f6fb5;
+  --chart-4: #1a8270;
+  --chart-5: #454b57;
+  --radius: 0.125rem;
+  --sidebar: #f7f7fb;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #2b3d7d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef0f6;
+  --sidebar-accent-foreground: #1d2a58;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #2b3d7d;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    letter-spacing: -0.01em;
+    word-break: keep-all;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* PDF 뷰어: react-pdf 가 정해진 해상도로 그린 페이지를 칸 너비에 맞춰 줄입니다(features/viewer/DocumentViewer.tsx).
+   가림 상자는 백분율 위치라 함께 맞춰집니다. */
+.pdf-page .react-pdf__Page,
+.pdf-page .react-pdf__Page__canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* 서비스 공통 모양 */
+@layer components {
+  /* 진한 전면 배너 */
+  .dg-hero {
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background:
+      radial-gradient(60rem 30rem at 85% 10%, rgb(35 141 82 / 0.28), transparent 70%),
+      radial-gradient(50rem 28rem at 10% 90%, rgb(63 111 181 / 0.3), transparent 70%),
+      linear-gradient(115deg, #0c111d 0%, #16203f 52%, #10302b 100%);
+  }
+
+  /* 배너에 걸치는 탭 바 */
+  .dg-tabbar {
+    background: linear-gradient(to right, rgb(43 61 125 / 0.94), rgb(35 141 82 / 0.94));
+  }
+
+  /* 상단 메뉴: 올리거나 현재 화면이면 밑줄 */
+  .dg-gnb-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: var(--header-h);
+    padding-inline: 1.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .dg-gnb-link::after {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: 1.15rem;
+    height: 2px;
+    background: var(--brand-ink);
+    transform: scaleX(0);
+    transition: transform 0.25s;
+  }
+  .dg-gnb-link:hover::after,
+  .dg-gnb-link[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+
+  /* 게시판형 표: 굵은 윗선과 얇은 행 구분선 */
+  .dg-table {
+    width: 100%;
+    font-size: 0.875rem;
+    border-top: 2px solid var(--brand-ink);
+  }
+  .dg-table thead {
+    background: var(--muted);
+  }
+  .dg-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 700;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .dg-table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .dg-table tbody tr:hover {
+    background: rgb(43 61 125 / 0.03);
+  }
+
+  .dg-select {
+    height: 2.25rem;
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+    background: var(--background);
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+  }
+  .dg-select:disabled {
+    color: var(--muted-foreground);
+    background: var(--muted);
+  }
+}
