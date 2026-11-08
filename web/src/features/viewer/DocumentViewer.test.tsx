@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { FindingView } from '@/api/types'
-import { DocumentViewer } from './DocumentViewer'
+import { DocumentViewer, type Focus } from './DocumentViewer'
 
 const PAGES = 30
 
@@ -89,9 +89,10 @@ function finding(page: number): FindingView {
   } as FindingView
 }
 
-function renderViewer(findings: FindingView[]) {
-  const client = new QueryClient()
-  return render(
+const client = new QueryClient()
+
+function viewer(findings: FindingView[], focus?: Focus) {
+  return (
     <QueryClientProvider client={client}>
       <DocumentViewer
         analysisId="a"
@@ -99,10 +100,15 @@ function renderViewer(findings: FindingView[]) {
         findings={findings}
         revealed={false}
         magnifier={false}
+        focus={focus}
         onSelectRow={() => {}}
       />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
+}
+
+function renderViewer(findings: FindingView[]) {
+  return render(viewer(findings))
 }
 
 describe('DocumentViewer 긴 문서', () => {
@@ -129,5 +135,28 @@ describe('DocumentViewer 긴 문서', () => {
     await waitFor(() => expect(observed).toHaveLength(PAGES))
     expect(screen.queryAllByTestId('drawn')).toHaveLength(0)
     expect(screen.getAllByRole('button', { name: '계좌번호 위치' })).toHaveLength(1)
+  })
+
+  it('확대를 풀면 맨 위가 아니라 고른 항목이 있는 쪽으로 간다', async () => {
+    const boxes = finding(20).wordBoxes!
+    const focus: Focus = { page: 20, boxes, zoom: true, nonce: 1 }
+    const { container, rerender } = render(viewer([finding(20)], focus))
+    await waitFor(() => expect(observed).toHaveLength(PAGES))
+    const page = container.querySelectorAll<HTMLElement>('.pdf-page')[19]
+    page.getBoundingClientRect = () => ({ top: 5000 }) as DOMRect
+
+    rerender(viewer([finding(20)]))
+
+    expect(vi.mocked(Element.prototype.scrollTo)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ left: 0, top: 5000 }),
+    )
+  })
+
+  it('고른 적이 없으면 맨 위에서 시작한다', async () => {
+    renderViewer([])
+    await waitFor(() => expect(observed).toHaveLength(PAGES))
+    expect(vi.mocked(Element.prototype.scrollTo)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ left: 0, top: 0 }),
+    )
   })
 })

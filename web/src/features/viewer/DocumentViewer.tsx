@@ -125,14 +125,25 @@ export function DocumentViewer({
   // 고른 위치를 칸 가운데로 옮깁니다. 레이아웃 효과 안이라 확대 배율이 바뀐 뒤의 배치로 바로 잴 수 있습니다.
   // 배율이 바뀔 때는 화면이 한 번에 바뀌므로 바로 옮기고, 같은 배율에서 다른 항목으로 갈 때만 부드럽게 옮깁니다.
   const lastScale = useRef(scale)
+  const lastFocusPage = useRef<number>(undefined)
   useLayoutEffect(() => {
     const box = scrollRef.current
     if (!box) return
     const behavior: ScrollBehavior = lastScale.current === scale ? 'smooth' : 'auto'
     lastScale.current = scale
+    if (focus) lastFocusPage.current = focus.page
     const target = box.querySelector<HTMLElement>('[data-focus="true"], [data-selected="true"]')
     if (!target) {
-      if (!focus) box.scrollTo({ left: 0, top: 0, behavior })
+      if (!focus) {
+        // 확대를 풀면 방금 보던 항목이 있는 쪽에 머뭅니다. 고른 적이 없을 때만 맨 위입니다.
+        const page = lastFocusPage.current
+          ? box.querySelectorAll('.pdf-page')[lastFocusPage.current - 1]
+          : undefined
+        const top = page
+          ? box.scrollTop + page.getBoundingClientRect().top - box.getBoundingClientRect().top
+          : 0
+        box.scrollTo({ left: 0, top, behavior })
+      }
       return
     }
     const t = target.getBoundingClientRect()
