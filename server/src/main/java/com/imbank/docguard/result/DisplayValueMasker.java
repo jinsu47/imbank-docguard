@@ -2,12 +2,15 @@ package com.imbank.docguard.result;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 화면에 기본으로 보여 줄 표시값을 만듭니다 (DOMAIN.md BR09).
  * Studio 가 이미 일부 가림·전체 가림으로 판정한 값은 원문 그대로(이미 가려진 상태로) 보여 줍니다.
  */
 public final class DisplayValueMasker {
+
+    private static final Pattern LONG_DIGIT_RUN = Pattern.compile("\\d{3,}");
 
     private DisplayValueMasker() {
     }
@@ -22,7 +25,7 @@ public final class DisplayValueMasker {
         String value = rawValue.strip();
         return switch (infoType == null ? "" : infoType) {
             case "이름" -> keepFirst(value, 1);
-            case "주민등록번호", "외국인등록번호" -> keepLeadingDigits(value, 6);
+            case "주민등록번호", "외국인등록번호", "국내거소신고번호" -> keepLeadingDigits(value, 6);
             case "여권번호", "운전면허번호" -> keepFirst(value, 2);
             case "계좌번호", "카드번호", "전화번호" -> keepTrailingDigits(value, 4);
             case "이메일" -> email(value);
@@ -30,6 +33,18 @@ public final class DisplayValueMasker {
             case "예금잔액", "거래내역", "소득", "재산", "채무", "대출신청금액" -> "***,***원";
             default -> "(가림)";
         };
+    }
+
+    /**
+     * 일부 가린 항목에 남은 정보의 종류를 돌려줍니다 (예: BIN·뒤 4자리).
+     * 값 자체를 쓰지 말라는 것은 AI 지시이므로, 숫자 세 개 이상이 이어지면 값이 섞였다고 보고 표시하지 않습니다.
+     */
+    public static String residual(String residualInfo, String maskState) {
+        if (residualInfo == null || residualInfo.isBlank() || !"부분마스킹".equals(maskState)
+                || LONG_DIGIT_RUN.matcher(residualInfo).find()) {
+            return null;
+        }
+        return residualInfo.strip();
     }
 
     /** 앞 n 글자만 남기고 나머지 글자·숫자를 *로 바꿉니다. 공백과 기호는 남깁니다. */

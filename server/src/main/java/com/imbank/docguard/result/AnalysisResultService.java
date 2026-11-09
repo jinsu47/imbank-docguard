@@ -53,11 +53,11 @@ public class AnalysisResultService {
                     blankTo(f.maskState(), "판별불가"), emptyToNull(f.valueNature()), f.policyLinked(), f.page(),
                     f.wordBoxes(), f.elementBox(), f.confidence()));
             rawFindings.add(new ResultPayload.RawFinding(f.rowIndex(), f.rawValue(), f.evidence(), f.subjectBasis(),
-                    f.reviewReason()));
+                    f.reviewReason(), f.residualInfo()));
         }
         ResultPayload payload = new ResultPayload(
                 new ResultPayload.Report(outcome.reportText(), report.sections(), report.reviewReason()),
-                rawFindings, outcome.citations(), outcome.steps());
+                rawFindings, outcome.citations(), outcome.steps(), outcome.gradeRoute());
         records.save(new AnalysisResultRecord(analysisId, encryption.encrypt(toJson(payload)),
                 EncryptionService.KEY_VERSION, now));
         return new Verdict(report.grade(), report.provisional(), report.reviewRequired(), outcome.findings().size(),
@@ -75,6 +75,9 @@ public class AnalysisResultService {
                         f.getSubjectRole(), f.getMaskState(), f.getValueNature(), f.isPolicyLinked(),
                         DisplayValueMasker.mask(raw.containsKey(f.getRowIndex()) ? raw.get(f.getRowIndex()).rawValue() : "",
                                 f.getInfoType(), f.getMaskState()),
+                        raw.containsKey(f.getRowIndex())
+                                ? DisplayValueMasker.residual(raw.get(f.getRowIndex()).residualInfo(), f.getMaskState())
+                                : null,
                         f.getPage(), f.getWordBoxes(), f.getElementBox(), f.getConfidence()))
                 .toList();
 
@@ -89,7 +92,8 @@ public class AnalysisResultService {
                 .map(c -> new ResultDtos.CitationView(c.index(), c.rowIndex(), c.field(), c.page(), c.wordBoxes(),
                         c.elementBox()))
                 .toList();
-        return new ResultDtos.ResultView(sections, ReportDisplayText.of(payload.report().reviewReason()), views, citations);
+        return new ResultDtos.ResultView(sections, ReportDisplayText.of(payload.report().reviewReason()), views, citations,
+                payload.gradeRoute());
     }
 
     /** 저장 원문에서 다시 읽어, 제목 반복 처리 전에 저장된 결과도 문단이 모두 보이게 합니다. */

@@ -1,4 +1,4 @@
-import type { AnalysisDetail, ResultView } from '@/api/types'
+import type { AnalysisDetail, GradeRoute, ResultView } from '@/api/types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { splitCitations } from '@/features/report/citations'
 import { cn } from '@/lib/utils'
@@ -6,6 +6,10 @@ import { ReplayBadge } from './GradeBadge'
 import { formatDateTime, GRADE_LABELS, GRADE_STYLES, REVIEW_LABELS } from './labels'
 
 const VERDICT_LABELS: Record<string, string> = { green: '정상', yellow: '주의', red: '확인 필요' }
+const GRADE_ROUTE_LABELS: Record<GradeRoute, string> = {
+  RULE: '고위험 규칙으로 판정',
+  DECISION: 'AI가 기준표로 판정',
+}
 
 /** 결과 상단 (F03): 위험 등급·사람 검토·문서 종류·발견 항목을 색면 타일로 보여 주고, 아래에 요약을 둡니다. */
 export function ResultSummary({ detail, result }: { detail: AnalysisDetail; result?: ResultView }) {
@@ -22,7 +26,12 @@ export function ResultSummary({ detail, result }: { detail: AnalysisDetail; resu
   return (
     <section className="grid gap-4">
       <div className="grid grid-cols-2 lg:grid-cols-4">
-        <SummaryTile label="위험 등급" value={gradeLabel} className={GRADE_STYLES[grade]} />
+        <SummaryTile
+          label="위험 등급"
+          value={gradeLabel}
+          note={result?.gradeRoute && GRADE_ROUTE_LABELS[result.gradeRoute]}
+          className={GRADE_STYLES[grade]}
+        />
         <SummaryTile
           label="사람 검토"
           value={s.reviewRequired ? '필요' : '불필요'}

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imbank.docguard.common.Point;
 import com.imbank.docguard.studio.StudioModels.Citation;
 import com.imbank.docguard.studio.StudioModels.ExtractedFinding;
+import com.imbank.docguard.studio.StudioModels.GradeRoute;
 import com.imbank.docguard.studio.StudioModels.JobSnapshot;
 import com.imbank.docguard.studio.StudioModels.JobStatus;
 import com.imbank.docguard.studio.StudioModels.Outcome;
@@ -37,6 +38,9 @@ public class StudioResultMapper {
     static final String FINDINGS_KEY = "민감정보 발견내역";
     private static final Pattern SOURCE_REF = Pattern.compile("^" + FINDINGS_KEY + "\\[(\\d+)]\\.(.+)$");
     private static final String POLICY_ID_SUFFIX = "__정책번호";
+    /** v4 부터 보고서 앞에 오는 판정 노드입니다. 보고서가 아니므로 Instruct 단계로 집지 않습니다. */
+    private static final String DECISION_STEP_NAME = "등급 판정";
+    private static final String RULE_GATE_STEP_NAME = "고위험 규칙 판정";
 
     private final ObjectMapper objectMapper;
     private final StudioProperties.Steps names;
@@ -55,7 +59,7 @@ public class StudioResultMapper {
                 completed.add(step);
             }
         });
-        Outcome outcome = status == JobStatus.COMPLETED ? outcome(steps) : null;
+        Outcome outcome = status == JobStatus.COMPLETED ? outcome(steps, response.path("output")) : null;
         return new JobSnapshot(status, completed, outcome);
     }
 
@@ -69,7 +73,7 @@ public class StudioResultMapper {
         };
     }
 
-    private Outcome outcome(Map<Step, JsonNode> steps) {
+    private Outcome outcome(Map<Step, JsonNode> steps, JsonNode output) {
         JsonNode parseText = jsonOf(text(steps.get(Step.PARSE)));
         JsonNode classify = additional(steps.get(Step.CLASSIFY));
         JsonNode report = steps.get(Step.REPORT);
@@ -92,7 +96,21 @@ public class StudioResultMapper {
                 findings(steps.get(Step.EXTRACT), steps.get(Step.MATCH)),
                 reportText(report),
                 citations(report),
-                runs);
+                runs,
+                gradeRoute(output));
+    }
+
+    /** 등급 판정 노드를 거쳤으면 AI 판정, 고위험 규칙이 green 이면 규칙입니다. 분기라서 실행된 쪽만 응답에 있습니다. */
+    private GradeRoute gradeRoute(JsonNode output) {
+        boolean ruleGateGreen = false;
+        for (JsonNode item : output) {
+            String model = item.path("model").asText("");
+            if (model.contains(DECISION_STEP_NAME)) {
+                return GradeRoute.DECISION;
+            }
+            ruleGateGreen |= model.contains(RULE_GATE_STEP_NAME) && "green".equals(verdict(item));
+        }
+        return ruleGateGreen ? GradeRoute.RULE : null;
     }
 
     // ---------------------------------------------------------------- 단계 찾기
@@ -113,7 +131,7 @@ public class StudioResultMapper {
         for (JsonNode item : output) {
             String model = item.path("model").asText("");
             Step step = configured.entrySet().stream()
-                    .filter(e -> model.equals(e.getValue()))
+                    .filter(e -> matchesName(e.getKey(), e.getValue(), model))
                     .map(Map.Entry::getKey)
                     .findFirst().orElse(null);
             if (step != null && !found.containsKey(step)) {
@@ -136,7 +154,7 @@ public class StudioResultMapper {
                 case "document-classify" -> Step.CLASSIFY;
                 case "information-extract" -> Step.EXTRACT;
                 case "match" -> Step.MATCH;
-                case "instruct" -> Step.REPORT;
+                case "instruct" -> item.path("model").asText("").contains(DECISION_STEP_NAME) ? null : Step.REPORT;
                 case "validate" -> afterExtract ? Step.EXTRACT_CHECK : Step.PARSE_CHECK;
                 default -> null;
             };
@@ -148,6 +166,14 @@ public class StudioResultMapper {
             }
         }
         return found;
+    }
+
+    /** v4 는 등급별 보고서 노드가 따로 있어("… 상", "… 중") 보고서만 이름 뒤에 등급이 붙어도 같은 단계로 봅니다. */
+    private static boolean matchesName(Step step, String configured, String model) {
+        if (configured == null) {
+            return false;
+        }
+        return model.equals(configured) || (step == Step.REPORT && model.startsWith(configured + " "));
     }
 
     // ---------------------------------------------------------------- 발견 항목
@@ -178,6 +204,7 @@ public class StudioResultMapper {
                     value(row, "가림 상태"),
                     value(row, "값 성격"),
                     value(row, "검토 사유"),
+                    value(row, "잔존 정보"),
                     policyLinked(matchRows, i),
                     pageOf(raw),
                     boxes(raw.path("word_coordinates")),

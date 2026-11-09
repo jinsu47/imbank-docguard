@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.imbank.docguard.TestFixtures;
 import com.imbank.docguard.result.ReportParser;
 import com.imbank.docguard.result.RiskGrade;
+import com.imbank.docguard.studio.StudioModels.GradeRoute;
 import com.imbank.docguard.studio.StudioModels.JobSnapshot;
 import com.imbank.docguard.studio.StudioModels.JobStatus;
 import com.imbank.docguard.studio.StudioModels.Step;
@@ -99,6 +100,102 @@ class StudioResultMapperTest {
         assertThat(snapshot.outcome().parseCheckVerdict()).isNotNull();
         assertThat(snapshot.outcome().extractCheckVerdict()).isNotNull();
         assertThat(ReportParser.parse(snapshot.outcome().reportText()).grade()).isEqualTo(RiskGrade.HIGH);
+    }
+
+    /** v4 구조: 규칙 검증과 등급 판정 노드가 보고서 앞에 있고, 보고서 노드 이름 뒤에 등급이 붙습니다. */
+    private ObjectNode v4Response() throws IOException {
+        ObjectNode raw = (ObjectNode) objectMapper.readTree(TestFixtures.rawResponse("set02").toFile());
+        ArrayNode output = (ArrayNode) raw.get("output");
+        ObjectNode report = (ObjectNode) output.remove(output.size() - 1);
+
+        ObjectNode rule = output.get(output.size() - 1).deepCopy();
+        rule.put("model", "Validate - 고위험 규칙 판정");
+        output.add(rule);
+
+        ObjectNode decision = report.deepCopy();
+        decision.put("model", "Instruct - 등급 판정");
+        ((ObjectNode) decision.path("content").path(0)).put("text", "R2: 성립\n등급: 상");
+        output.add(decision);
+
+        report.put("model", "Instruct - 민감정보 분석보고서 상");
+        output.add(report);
+        return raw;
+    }
+
+    @Test
+    @DisplayName("v4: 등급 판정 노드를 건너뛰고 등급별 보고서 노드를 읽는다")
+    void readsGradedReportNode() throws IOException {
+        JobSnapshot snapshot = mapper(STEPS).map(v4Response());
+
+        assertThat(snapshot.completedSteps()).containsExactly(Step.values());
+        assertThat(snapshot.outcome().reportText()).startsWith("[금융문서 민감정보 점검보고서]");
+        assertThat(ReportParser.parse(snapshot.outcome().reportText()).grade()).isEqualTo(RiskGrade.HIGH);
+        assertThat(snapshot.outcome().extractCheckVerdict()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("v4: 등급 판정 노드를 거치면 판정 경로는 AI 판정이다")
+    void gradeRouteDecision() throws IOException {
+        assertThat(mapper(STEPS).map(v4Response()).outcome().gradeRoute()).isEqualTo(GradeRoute.DECISION);
+    }
+
+    @Test
+    @DisplayName("v4: 고위험 규칙이 green 이고 등급 판정 노드가 없으면 판정 경로는 규칙이다")
+    void gradeRouteRule() throws IOException {
+        ObjectNode raw = v4Response();
+        ArrayNode output = (ArrayNode) raw.get("output");
+        output.remove(output.size() - 2);
+        ObjectNode gate = (ObjectNode) output.get(output.size() - 2);
+        ((ObjectNode) gate.path("content").path(0)).put("additional_values", "{\"verdict\":\"green\"}");
+
+        assertThat(mapper(STEPS).map(raw).outcome().gradeRoute()).isEqualTo(GradeRoute.RULE);
+    }
+
+    @Test
+    @DisplayName("v4 이전 응답에는 판정 경로가 없다")
+    void gradeRouteAbsentBeforeV4() throws IOException {
+        ObjectNode raw = (ObjectNode) objectMapper.readTree(TestFixtures.rawResponse("set02").toFile());
+
+        assertThat(mapper(STEPS).map(raw).outcome().gradeRoute()).isNull();
+    }
+
+    @Test
+    @DisplayName("v4: 추출 행의 잔존 정보를 읽는다")
+    void readsResidualInfo() throws IOException {
+        ObjectNode raw = v4Response();
+        for (JsonNode item : raw.get("output")) {
+            if ("Information Extract - 공통민감정보 추출".equals(item.path("model").asText())) {
+                ObjectNode content = (ObjectNode) item.path("content").path(0);
+                ObjectNode extra = (ObjectNode) objectMapper.readTree(content.path("additional_values").asText());
+                ((ObjectNode) extra.get(StudioResultMapper.FINDINGS_KEY).get(0)).put("잔존 정보", "뒤 4자리");
+                content.put("additional_values", extra.toString());
+            }
+        }
+
+        assertThat(mapper(STEPS).map(raw).outcome().findings().get(0).residualInfo()).isEqualTo("뒤 4자리");
+    }
+
+    @Test
+    @DisplayName("v4: 노드 이름 설정이 달라도 등급 판정 노드를 보고서로 읽지 않는다")
+    void doesNotReadDecisionAsReportOnFallback() throws IOException {
+        StudioProperties.Steps renamed = new StudioProperties.Steps("a", "b", "c", "d", "e", "f", "g");
+
+        JobSnapshot snapshot = mapper(renamed).map(v4Response());
+
+        assertThat(snapshot.outcome().reportText()).startsWith("[금융문서 민감정보 점검보고서]");
+    }
+
+    @Test
+    @DisplayName("v4: 등급 판정만 끝난 진행 중 응답은 보고서를 완료로 세지 않는다")
+    void decisionDoesNotCompleteReport() throws IOException {
+        ObjectNode raw = v4Response();
+        raw.put("status", "in_progress");
+        ArrayNode output = (ArrayNode) raw.get("output");
+        output.remove(output.size() - 1);
+
+        JobSnapshot snapshot = mapper(STEPS).map(raw);
+
+        assertThat(snapshot.completedSteps()).doesNotContain(Step.REPORT);
     }
 
     @Test

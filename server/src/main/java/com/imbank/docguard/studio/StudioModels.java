@@ -32,12 +32,16 @@ public final class StudioModels {
             List<ExtractedFinding> findings,
             String reportText,
             List<Citation> citations,
-            List<StepRun> steps) {
+            List<StepRun> steps,
+            GradeRoute gradeRoute) {
     }
+
+    /** v4 에서 위험 등급이 정해진 경로입니다. v4 이전 워크플로의 결과에는 없습니다(null). */
+    public enum GradeRoute { RULE, DECISION }
 
     /**
      * Extract 단계의 {@code 민감정보 발견내역[]} 한 행.
-     * rawValue, evidence, subjectBasis, reviewReason 은 원문이 들어 있으므로 암호화해서만 저장합니다.
+     * rawValue, evidence, subjectBasis, reviewReason, residualInfo 는 문서에서 나온 자유 문장이므로 암호화해서만 저장합니다.
      */
     public record ExtractedFinding(
             int rowIndex,
@@ -50,6 +54,7 @@ public final class StudioModels {
             String maskState,
             String valueNature,
             String reviewReason,
+            String residualInfo,
             boolean policyLinked,
             Integer page,
             List<List<Point>> wordBoxes,

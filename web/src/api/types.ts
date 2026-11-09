@@ -70,6 +70,8 @@ export interface FindingView {
   valueNature?: string
   policyLinked: boolean
   displayValue: string
+  /** 일부 가린 항목에 남은 정보의 종류 (v4 부터) */
+  residualInfo?: string
   page?: number
   wordBoxes?: Point[][]
   elementBox?: Point[]
@@ -90,11 +92,15 @@ export interface ReportSection {
   body: string
 }
 
+export type GradeRoute = 'RULE' | 'DECISION'
+
 export interface ResultView {
   sections: ReportSection[]
   reviewReason?: string
   findings: FindingView[]
   citations: CitationView[]
+  /** 위험 등급이 정해진 경로 (v4 부터) */
+  gradeRoute?: GradeRoute
 }
 
 export interface RevealedFinding {

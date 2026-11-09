@@ -176,11 +176,14 @@ erDiagram
 ```json
 {
   "report": { "raw": "보고서 본문", "sections": { "요약": "...", "판정 근거": "..." } },
-  "findings": [ { "rowIndex": 0, "원문값": "...", "원문 근거": "...", "정보주체 식별근거": "...", "검토 사유": "..." } ],
+  "findings": [ { "rowIndex": 0, "원문값": "...", "원문 근거": "...", "정보주체 식별근거": "...", "검토 사유": "...", "잔존 정보": "..." } ],
   "citations": [ { "index": 1, "sourceRef": "민감정보 발견내역[0].원문값", "page": 1, "wordBoxes": [[{"x": 0.21, "y": 0.19}]] } ],
-  "steps": [ { "name": "step_1_parse", "cacheHit": true } ]
+  "steps": [ { "name": "step_1_parse", "cacheHit": true } ],
+  "gradeRoute": "RULE"
 }
 ```
+
+`잔존 정보`와 `gradeRoute`는 v4부터 있어 이전 결과에는 없습니다. 잔존 정보는 AI가 쓴 자유 문장이어서 값이 섞일 수 있으므로 평문 컬럼에 두지 않습니다. 화면에는 일부 가린 항목에서 숫자 세 개 이상이 이어지지 않은 경우에만 보여 줍니다.
 
 Studio 원본 응답 전체는 저장하지 않습니다. 디버깅이 필요하면 `APP_KEEP_RAW_RESPONSE=true`일 때만 위 JSON에 `raw`를 추가합니다(로컬 전용).
 
@@ -197,7 +200,7 @@ Studio 원본 응답 전체는 저장하지 않습니다. 디버깅이 필요하
 | `info_type` | `varchar(30)` | NOT NULL | | 정보 유형 (예: 이름, 주민등록번호) |
 | `subject_role` | `varchar(30)` | NOT NULL | | 정보주체 역할 (예: 신청인, 거래상대방) |
 | `mask_state` | `varchar(20)` | NOT NULL | | 미마스킹, 부분마스킹, 전체마스킹 |
-| `value_nature` | `varchar(20)` | NULL | | 실제값, 설정값, 해당없음 등 |
+| `value_nature` | `varchar(20)` | NULL | | 개인별 사실, 공통조건, 예시·합성 등 |
 | `policy_linked` | `boolean` | NOT NULL | | Match 단계에서 정책과 연결되었는지 |
 | `page` | `int` | NULL | | |
 | `word_boxes` | `jsonb` | NULL | | 값 자체의 상자들 (`word_coordinates`, 상대 좌표) |

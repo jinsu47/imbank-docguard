@@ -72,6 +72,7 @@ export function FindingList({
                     </div>
                     <div className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                       <span>{maskLabel(f.maskState)}</span>
+                      {f.residualInfo && <span>· 남은 정보: {f.residualInfo}</span>}
                       {f.valueNature && f.valueNature !== '해당없음' && (
                         <span>· {f.valueNature}</span>
                       )}

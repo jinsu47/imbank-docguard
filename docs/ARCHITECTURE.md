@@ -14,9 +14,11 @@ flowchart LR
     S -- JPA --> DB[(PostgreSQL)]
     S -- "암호화 저장" --> FS[(로컬 파일 저장소<br/>storage/)]
     S -- "REST, Bearer 키<br/>x-project-id" --> UP[Upstage Agents API<br/>api.upstage.ai/v2]
-    UP --> WF[Studio 워크플로 v3.2<br/>Config 5]
+    UP --> WF[Studio 워크플로 v4.2]
     subgraph Studio 안에서 실행
-      WF --> P[Parse] --> V1[원문 인식 점검] --> C[Classify] --> E[Extract] --> M[Match] --> V2[추출 결과 점검] --> I[Instruct 보고서]
+      WF --> P[Parse] --> V1[원문 인식 점검] --> C[Classify] --> E[Extract] --> M[Match] --> V2[추출 결과 점검] --> V3[고위험 규칙 판정]
+      V3 -- 점수 3 이상 --> I[등급별 보고서]
+      V3 -- 그 외 --> D[Instruct 등급 판정] -- 상·중·하·미확정 --> I
     end
 ```
 
@@ -93,10 +95,12 @@ flowchart LR
 | `step_1_parse` | 페이지 수, `cache_hit` |
 | `Validate - 원문 인식 점검` | `additional_values.verdict` |
 | `step_2_classify` | `additional_values.document_type._value`, `confidence_score` |
-| `Information Extract - 공통민감정보 추출` | `text`의 `민감정보 발견내역[]`, `additional_values`의 필드별 `page`, `coordinates`, `word_coordinates`, `confidence` |
+| `Information Extract - 공통민감정보 추출` | `text`의 `민감정보 발견내역[]`, `additional_values`의 필드별 `page`, `coordinates`, `word_coordinates`, `confidence`, `잔존 정보` |
 | `Match - 공식근거 정책 대조` | 항목별 정책 연결 여부 |
 | `Validate - 추출 결과 점검` | `additional_values.verdict` |
-| `Instruct - 민감정보 분석보고서` | `text`(JSON 문자열을 한 번 더 풀어야 하는 보고서 본문), `additional_values.citations[]` |
+| `Validate - 고위험 규칙 판정` | `additional_values.verdict`. green이면 판정 경로를 규칙으로, 그 외에는 AI 판정으로 저장 |
+| `Instruct - 등급 판정` | 읽지 않음. 보고서가 아니며 등급은 보고서에서만 읽습니다(BR01) |
+| `Instruct - 민감정보 분석보고서 {상·중·하·미확정}` | `text`(JSON 문자열을 한 번 더 풀어야 하는 보고서 본문), `additional_values.citations[]`. 등급별 노드 중 실행된 하나만 응답에 있습니다 |
 
 - 단계 이름은 Studio 노드 이름에서 만들어지므로, 서버는 이름을 설정 파일(`studio.steps.*`)에 두고 코드에 박아 두지 않습니다. 이름으로 찾지 못하면 내용(`민감정보 발견내역` 키, 보고서 제목)으로 한 번 더 찾습니다.
 - Extract와 Match 단계가 모두 `민감정보 발견내역`을 돌려주므로 Extract 단계의 값을 씁니다.
@@ -163,8 +167,8 @@ flowchart LR
 |---|---|---|---|
 | `UPSTAGE_API_KEY` | 사용자가 입력 | 예 | Upstage 콘솔에서 만든 키 (`up_...`) |
 | `UPSTAGE_PROJECT_ID` | 사용자가 입력 | 아니요 | 워크플로가 속한 Project ID. 저장소에는 적지 않음 |
-| `UPSTAGE_AGENT_ID` | 사용자가 입력 | 아니요 | v3.2 워크플로 Agent ID |
-| `UPSTAGE_CONFIG_ID` | 코드 기본값 `2`(v2.5), 최종본은 `5` | 아니요 | v3.2를 쓰려면 환경 변수에 `5`를 지정합니다 |
+| `UPSTAGE_AGENT_ID` | 사용자가 입력 | 아니요 | 호출할 워크플로 Agent ID. v4.2는 v4.2를 불러온 워크플로의 값 |
+| `UPSTAGE_CONFIG_ID` | 코드 기본값 `2`(과거 기록용) | 아니요 | 반드시 호출할 워크플로의 설정 번호로 지정합니다. Agent ID와 짝이 맞아야 합니다 |
 | `UPSTAGE_BASE_URL` | `https://api.upstage.ai/v2` | 아니요 | |
 | `UPSTAGE_POLL_INTERVAL_MS` | `3000` | 아니요 | 상태 조회 간격 |
 | `UPSTAGE_JOB_TIMEOUT_SEC` | `600` | 아니요 | 기다리는 시간의 최솟값. 쪽수 × 60초가 더 크면 그 시간까지 기다리고, 넘으면 실패 처리 |
