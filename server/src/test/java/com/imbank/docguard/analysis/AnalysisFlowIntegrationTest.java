@@ -134,6 +134,71 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("F16: 보고서를 md·json 으로 내려받으면 원문값이 없고, 감사 기록이 남으며, 다른 사람은 404 이다")
+    void exportReport() throws Exception {
+        AuthUser owner = createUser(Role.INSPECTOR);
+        AuthUser other = createUser(Role.INSPECTOR);
+        UUID id = uploadAndComplete(owner);
+
+        String md = mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "md").with(as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/markdown")))
+                .andExpect(header().string("Content-Disposition", "attachment"))
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(md).contains("# 금융문서 민감정보 점검 보고서", "## 요약", "## 근거 위치", "【†");
+
+        String json = mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "json").with(as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/json")))
+                .andExpect(jsonPath("$.verdict.riskGrade").exists())
+                .andExpect(jsonPath("$.findings").isNotEmpty())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+        List<String> rawValues = rawValues("set02");
+        assertThat(rawValues).isNotEmpty();
+        for (String raw : rawValues) {
+            assertThat(md).as("보고서 파일에 원문값이 들어 있음").doesNotContain(raw);
+            assertThat(json).as("결과 파일에 원문값이 들어 있음").doesNotContain(raw);
+        }
+        assertThat(auditLogs.findByActionOrderByIdDesc(AuditAction.RESULT_EXPORTED))
+                .filteredOn(a -> a.getTargetId().equals(id.toString()))
+                .hasSize(2)
+                .allSatisfy(a -> assertThat(a.getActorId()).isEqualTo(owner.id()));
+
+        mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "docx").with(as(owner)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "md").with(as(other)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("F13: 가린 PDF 는 글자 층이 없고, 감사 기록이 남으며, 다른 사람은 404 이다")
+    void exportMaskedPdf() throws Exception {
+        AuthUser owner = createUser(Role.INSPECTOR);
+        AuthUser other = createUser(Role.INSPECTOR);
+        UUID id = uploadAndComplete(owner);
+
+        var response = mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "pdf").with(as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", "attachment"))
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andExpect(header().exists("X-Unlocated-Count"))
+                .andReturn().getResponse();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(response.getContentAsByteArray())) {
+            assertThat(pdf.getNumberOfPages()).isEqualTo(1);
+            assertThat(new org.apache.pdfbox.text.PDFTextStripper().getText(pdf)).isBlank();
+        }
+        assertThat(auditLogs.findByActionOrderByIdDesc(AuditAction.RESULT_EXPORTED))
+                .filteredOn(a -> a.getTargetId().equals(id.toString()))
+                .hasSize(1);
+
+        mockMvc.perform(get("/api/analyses/" + id + "/export").param("format", "pdf").with(as(other)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("원본 파일은 소유자만 받고 처음 열 때 감사 기록, 원문 보기는 사유 필수이며 감사 기록을 남긴다")
     void fileAndReveal() throws Exception {
         AuthUser inspector = createUser(Role.INSPECTOR);

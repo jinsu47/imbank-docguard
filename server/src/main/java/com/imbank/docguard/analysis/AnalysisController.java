@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,6 +62,21 @@ public class AnalysisController {
     @GetMapping("/{id}/result")
     public ResponseEntity<ResultDtos.ResultView> result(@PathVariable UUID id) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.result(CurrentUser.require(), id));
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<byte[]> export(@PathVariable UUID id, @RequestParam(defaultValue = "md") String format) {
+        AnalysisService.ExportFile file = service.export(CurrentUser.require(), id, format);
+        ResponseEntity.BodyBuilder response = ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                // 파일 이름은 헤더에 넣지 않고 화면에서 정합니다.
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment");
+        if (file.areaMasked() != null) {
+            response.header("X-Area-Masked-Count", file.areaMasked().toString())
+                    .header("X-Unlocated-Count", file.unlocated().toString());
+        }
+        return response.body(file.content());
     }
 
     @GetMapping("/{id}/file")

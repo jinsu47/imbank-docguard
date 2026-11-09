@@ -108,6 +108,15 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return (text ? JSON.parse(text) : undefined) as T
 }
 
+/** 파일과 응답 헤더가 함께 필요한 경우(가린 PDF 의 가림 건수 등). */
+export async function apiFile(
+  path: string,
+  options: RequestOptions = {},
+): Promise<{ blob: Blob; headers: Headers }> {
+  const response = await send(path, options)
+  return { blob: await response.blob(), headers: response.headers }
+}
+
 /** 파일 응답(원본 문서). */
 export async function apiBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
   const response = await send(path, options)

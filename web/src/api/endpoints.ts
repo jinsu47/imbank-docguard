@@ -1,4 +1,4 @@
-import { api, apiBlob } from './client'
+import { api, apiBlob, apiFile } from './client'
 import type {
   AccuracyReport,
   AdminAnalysis,
@@ -30,6 +30,8 @@ export const authApi = {
   logout: () => api<void>('/api/auth/logout', { method: 'POST' }),
 }
 
+export type ExportFormat = 'md' | 'json' | 'pdf'
+
 export const analysisApi = {
   list: () => api<AnalysisSummary[]>('/api/analyses'),
   create: (file: File) => {
@@ -40,6 +42,8 @@ export const analysisApi = {
   detail: (id: string) => api<AnalysisDetail>(`/api/analyses/${id}`),
   result: (id: string) => api<ResultView>(`/api/analyses/${id}/result`),
   file: (id: string) => apiBlob(`/api/analyses/${id}/file`),
+  export: (id: string, format: ExportFormat) =>
+    apiFile(`/api/analyses/${id}/export?format=${format}`),
   reveal: (id: string, reason: string) =>
     api<RevealedFinding[]>(`/api/analyses/${id}/reveal`, { method: 'POST', json: { reason } }),
   retry: (id: string) => api<void>(`/api/analyses/${id}/retry`, { method: 'POST' }),

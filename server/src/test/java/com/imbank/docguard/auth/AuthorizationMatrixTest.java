@@ -34,6 +34,7 @@ class AuthorizationMatrixTest extends IntegrationTestBase {
             "GET,    /api/analyses/{id},             401, 404, 404, 404",
             "GET,    /api/analyses/{id}/result,      401, 404, 404, 404",
             "GET,    /api/analyses/{id}/file,        401, 404, 404, 404",
+            "GET,    /api/analyses/{id}/export,      401, 404, 404, 404",
             "POST,   /api/analyses/{id}/reveal,      401, 404, 404, 404",
             "POST,   /api/analyses/{id}/retry,       401, 404, 404, 404",
             "DELETE, /api/analyses/{id},             401, 404, 404, 404",

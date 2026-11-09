@@ -7,7 +7,9 @@ import com.imbank.docguard.common.ApiException;
 import com.imbank.docguard.common.AppProperties;
 import com.imbank.docguard.common.RateLimiter;
 import com.imbank.docguard.result.AnalysisResultService;
+import com.imbank.docguard.result.MaskedPdfExporter;
 import com.imbank.docguard.result.ResultDtos;
+import com.imbank.docguard.result.ResultExporter;
 import com.imbank.docguard.review.Review;
 import com.imbank.docguard.review.ReviewRepository;
 import com.imbank.docguard.storage.EncryptionService;
@@ -47,6 +49,8 @@ public class AnalysisService {
     private final FileStorage storage;
     private final EncryptionService encryption;
     private final AnalysisResultService results;
+    private final ResultExporter exporter;
+    private final MaskedPdfExporter maskedPdf;
     private final StudioService studio;
     private final AuditService audit;
     private final RateLimiter rateLimiter;
@@ -54,8 +58,8 @@ public class AnalysisService {
 
     public AnalysisService(AnalysisRepository analyses, ReviewRepository reviews, AnalysisAccessPolicy policy,
                            UploadValidator validator, FileStorage storage, EncryptionService encryption,
-                           AnalysisResultService results, StudioService studio, AuditService audit,
-                           RateLimiter rateLimiter, AppProperties properties) {
+                           AnalysisResultService results, ResultExporter exporter, MaskedPdfExporter maskedPdf,
+                           StudioService studio, AuditService audit, RateLimiter rateLimiter, AppProperties properties) {
         this.analyses = analyses;
         this.reviews = reviews;
         this.policy = policy;
@@ -63,6 +67,8 @@ public class AnalysisService {
         this.storage = storage;
         this.encryption = encryption;
         this.results = results;
+        this.exporter = exporter;
+        this.maskedPdf = maskedPdf;
         this.studio = studio;
         this.audit = audit;
         this.rateLimiter = rateLimiter;
@@ -138,6 +144,47 @@ public class AnalysisService {
             throw ApiException.conflict("NOT_COMPLETED", "분석이 아직 끝나지 않았습니다.");
         }
         return results.view(id);
+    }
+
+    /** areaMasked 와 unlocated 는 가린 PDF 일 때만 있습니다({@link MaskedPdfExporter.Output}). */
+    public record ExportFile(byte[] content, String contentType, Integer areaMasked, Integer unlocated) {
+    }
+
+    /**
+     * 보고서·결과·가린 PDF 내려받기 (F16, F13). 결과 응답과 같은 권한과 값만 쓰고, 내려받을 때마다 감사 기록을 남깁니다.
+     * 가린 PDF 는 쪽마다 이미지를 만들어 오래 걸리므로 DB 연결을 잡고 있지 않도록 트랜잭션을 두지 않습니다.
+     */
+    public ExportFile export(AuthUser user, UUID id, String format) {
+        ResultExporter.Format parsed = ResultExporter.Format.parse(format)
+                .orElseThrow(() -> ApiException.badRequest("INVALID_FORMAT", "내려받기 형식은 md, json, pdf 입니다."));
+        ResultDtos.ResultView view = result(user, id);
+        Analysis a = load(id);
+        if (parsed == ResultExporter.Format.PDF) {
+            return maskedPdf(user, a, view);
+        }
+        AnalysisDtos.AnalysisSummary s = summary(a, true);
+        byte[] content = exporter.render(parsed, new ResultExporter.Meta(s.fileName(), s.documentType(), s.pageCount(),
+                s.riskGrade(), s.gradeProvisional(), s.reviewRequired(), s.completedAt(), a.getStudioConfigId(),
+                s.replay()), view);
+        audit.record(AuditAction.RESULT_EXPORTED, user.id(), "ANALYSIS", id.toString(), null,
+                Map.of("format", parsed.name()));
+        return new ExportFile(content, parsed.contentType(), null, null);
+    }
+
+    private ExportFile maskedPdf(AuthUser user, Analysis a, ResultDtos.ResultView view) {
+        if (!"application/pdf".equals(a.getContentType())) {
+            throw ApiException.badRequest("PDF_ONLY", "가린 PDF 는 PDF 로 올린 문서만 만들 수 있습니다.");
+        }
+        if (a.getStoredPath() == null) {
+            throw new ApiException(HttpStatus.GONE, "PURGED", "보관 기간이 지나 원본을 삭제했습니다.");
+        }
+        rateLimiter.check("masked-pdf:" + user.id(), 10, Duration.ofMinutes(1), "가린 PDF 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
+        MaskedPdfExporter.Output output = maskedPdf.render(storage.read(a.getStoredPath()), view.findings());
+        audit.record(AuditAction.RESULT_EXPORTED, user.id(), "ANALYSIS", a.getId().toString(), null,
+                Map.of("format", ResultExporter.Format.PDF.name(), "areaMasked", output.areaMasked(),
+                        "unlocated", output.unlocated()));
+        return new ExportFile(output.content(), ResultExporter.Format.PDF.contentType(), output.areaMasked(),
+                output.unlocated());
     }
 
     public record FileContent(byte[] content, String contentType) {

@@ -15,6 +15,7 @@ import { errorMessage, isInProgress } from '@/features/analysis/labels'
 import { ResultSummary } from '@/features/analysis/ResultSummary'
 import { RevealDialog } from '@/features/analysis/RevealDialog'
 import { ReviewPanel } from '@/features/analysis/ReviewPanel'
+import { ReportDownload } from '@/features/report/ReportDownload'
 import { ReportView } from '@/features/report/ReportView'
 import { DocumentViewer, type Focus } from '@/features/viewer/DocumentViewer'
 import { boxesOf } from '@/features/viewer/boxes'
@@ -249,7 +250,14 @@ function CompletedView({ detail }: { detail: AnalysisDetail }) {
     <div className="grid content-start gap-4">
       <ReviewPanel detail={detail} />
       <div className="border bg-white p-5">
-        <h2 className="mb-4 text-base font-bold">분석 보고서</h2>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+          <h2 className="text-base font-bold">분석 보고서</h2>
+          <ReportDownload
+            analysisId={id}
+            fileName={detail.summary.fileName}
+            contentType={detail.contentType}
+          />
+        </div>
         <ReportView
           sections={r.sections}
           onCitation={selectCitation}

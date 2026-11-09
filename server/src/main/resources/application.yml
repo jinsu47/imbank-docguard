@@ -85,3 +85,9 @@ app:
   signup-enabled: ${APP_SIGNUP_ENABLED:true}
   scheduling:
     enabled: true
+
+# PDF 라이브러리의 글자·글꼴별 경고에 문서 내용이 섞이지 않도록 오류만 남깁니다(SECURITY.md 로깅 금지 항목).
+logging:
+  level:
+    org.apache.pdfbox: ERROR
+    org.apache.fontbox: ERROR

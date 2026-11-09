@@ -17,7 +17,8 @@ ENV_FILE=/etc/docguard/docguard.env
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y openjdk-21-jre-headless postgresql caddy ufw openssl unattended-upgrades
+# fontconfig, fonts-nanum: 글꼴을 넣지 않은 한글 PDF 도 가린 PDF(F13)에서 글자가 그려지게 합니다.
+apt-get install -y openjdk-21-jre-headless postgresql caddy ufw openssl unattended-upgrades fontconfig fonts-nanum
 apt-get upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
 
 # 네이버클라우드 이미지는 자동 보안 업데이트가 꺼져 있으므로 켭니다.

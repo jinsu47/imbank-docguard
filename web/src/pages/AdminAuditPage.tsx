@@ -197,5 +197,7 @@ function describe(row: AuditRow): string {
   if (before !== undefined || after !== undefined)
     parts.push(`${String(before)} → ${String(after)}`)
   if (row.detail?.decision) parts.push(String(row.detail.decision))
+  if (row.detail?.format) parts.push(String(row.detail.format))
+  if (row.detail?.unlocated) parts.push(`미처리 ${String(row.detail.unlocated)}건`)
   return parts.join(' · ') || '-'
 }

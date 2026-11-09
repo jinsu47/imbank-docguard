@@ -40,7 +40,7 @@ flowchart LR
 | 문서 표시 | PDF.js (`react-pdf`) | 페이지를 캔버스로 그리고 그 위에 좌표 상자를 겹칩니다. |
 | 테스트 | JUnit 5, Spring Security Test, Testcontainers 1.21.4, Vitest, Testing Library | Testcontainers는 이 PC의 Docker 29와 통신하려면 1.21.4 이상이어야 합니다. |
 
-> ⚠️ 가정: 가린 PDF 다운로드(P2)는 Java의 PDFBox로 구현하기 어렵습니다. 이 기능을 P0로 올리면 Python 작업기(PyMuPDF)를 따로 두는 방안을 다시 검토합니다.
+가린 PDF(F13)는 PDFBox로 각 쪽을 200 DPI 이미지로 그린 뒤 값 자리를 칠해 새 PDF에 넣습니다(`result/MaskedPdfExporter`). 글자 층이 남지 않는 대신 글자를 선택할 수 없고, 동시에 2건까지만 만듭니다. 글꼴을 넣지 않은 PDF를 그리기 위해 서버에 `fontconfig`, `fonts-nanum`이 필요합니다.
 
 ## 3. 주요 컴포넌트와 책임
 
@@ -131,6 +131,7 @@ flowchart LR
 | `GET /api/analyses/{id}` | 소유자, 검토 범위의 `REVIEWER`, `ADMIN` | 상태, 진행 단계, 요약 |
 | `GET /api/analyses/{id}/result` | 소유자, 검토 범위의 `REVIEWER`, `ADMIN` | 보고서, 가린 발견 항목, 좌표, 인용 |
 | `GET /api/analyses/{id}/file` | 소유자, 검토 범위의 `REVIEWER`, `ADMIN` | 원본 파일 (복호화해서 전달, 캐시 금지) |
+| `GET /api/analyses/{id}/export?format=` | 소유자, 검토 범위의 `REVIEWER`, `ADMIN` | 결과 내려받기. `format`은 `md`(보고서), `json`(판정·발견 항목·근거 위치), `pdf`(가린 PDF). 원문값은 넣지 않으며, 캐시 금지, 감사 기록. `pdf`는 `X-Area-Masked-Count`, `X-Unlocated-Count` 헤더로 영역 전체를 가린 건수와 가리지 못한 건수를 알림 |
 | `POST /api/analyses/{id}/reveal` | 소유자, 검토 범위의 `REVIEWER`, `ADMIN` | 원문값 열람. 사유 필수, 감사 기록 |
 | `POST /api/analyses/{id}/retry` | 소유자, `ADMIN` | 실패한 분석 다시 실행 |
 | `DELETE /api/analyses/{id}` | 소유자, `ADMIN` | 원본과 결과 즉시 삭제 |

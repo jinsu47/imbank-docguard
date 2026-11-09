@@ -17,6 +17,7 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   ANALYSIS_PURGED: '보관 기간 정리',
   RAW_VALUE_REVEALED: '원문 보기',
   ORIGINAL_FILE_VIEWED: '원본 열람',
+  RESULT_EXPORTED: '결과 내려받기',
   REVIEW_RECORDED: '검토 기록',
   USER_ROLE_CHANGED: '역할 변경',
   USER_STATUS_CHANGED: '상태 변경',

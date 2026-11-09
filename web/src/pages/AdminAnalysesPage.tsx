@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { ApiError } from '@/api/client'
 import { adminApi, analysisApi } from '@/api/endpoints'
 import type { AdminAnalysis } from '@/api/types'
+import { ListPagination } from '@/components/ListPagination'
 import { PageBand, PageBody } from '@/components/PageBand'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -15,11 +16,13 @@ import {
   REVIEW_LABELS,
   STATUS_LABELS,
 } from '@/features/analysis/labels'
+import { usePagedList } from '@/lib/pagination'
 
 // 분석 현황 (BR11). 관리자는 모든 사용자의 분석을 열어 보고 지울 수 있습니다.
 export default function AdminAnalysesPage() {
   const queryClient = useQueryClient()
   const list = useQuery({ queryKey: ['admin', 'analyses'], queryFn: adminApi.analyses })
+  const { page, totalPages, pageItems, goTo, listRef } = usePagedList(list.data ?? [])
   const remove = useMutation({
     mutationFn: (id: string) => analysisApi.remove(id),
     onSuccess: () => {
@@ -62,75 +65,83 @@ export default function AdminAnalysesPage() {
             아직 분석이 없습니다.
           </div>
         ) : (
-          <div className="overflow-x-auto bg-white">
-            <table className="dg-table">
-              <thead>
-                <tr>
-                  <th>문서</th>
-                  <th>올린 사람</th>
-                  <th>상태</th>
-                  <th>등급</th>
-                  <th>검토</th>
-                  <th>올린 시각</th>
-                  <th>보관 기한</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.data.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      <Link
-                        to={`/analyses/${a.id}`}
-                        className="font-semibold underline-offset-4 hover:underline"
-                      >
-                        {a.fileName}
-                      </Link>
-                      {a.replay && (
-                        <Badge variant="outline" className="ml-2">
-                          재생 모드
-                        </Badge>
-                      )}
-                    </td>
-                    <td>{a.ownerEmail ?? a.ownerId}</td>
-                    <td className="whitespace-nowrap">
-                      {STATUS_LABELS[a.status]}
-                      {a.errorCode && (
-                        <span className="ml-1 text-xs text-destructive">{a.errorCode}</span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap">
-                      {a.riskGrade ? GRADE_LABELS[a.riskGrade] : '-'}
-                    </td>
-                    <td className="whitespace-nowrap">
-                      {a.status === 'COMPLETED' ? REVIEW_LABELS[a.reviewStatus] : '-'}
-                    </td>
-                    <td className="whitespace-nowrap text-muted-foreground">
-                      {formatDateTime(a.createdAt)}
-                    </td>
-                    <td className="whitespace-nowrap text-muted-foreground">
-                      {a.purgedAt ? '정리됨' : formatDateTime(a.expiresAt)}
-                    </td>
-                    <td>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        aria-label={`${a.fileName} 삭제`}
-                        title={
-                          isInProgress(a.status)
-                            ? '진행 중인 분석은 끝난 뒤 지울 수 있습니다.'
-                            : undefined
-                        }
-                        disabled={isInProgress(a.status) || remove.isPending}
-                        onClick={() => onDelete(a)}
-                      >
-                        삭제
-                      </Button>
-                    </td>
+          <div ref={listRef} className="grid min-w-0 scroll-mt-24 gap-4">
+            <div className="overflow-x-auto bg-white">
+              <table className="dg-table">
+                <thead>
+                  <tr>
+                    <th>문서</th>
+                    <th>올린 사람</th>
+                    <th>상태</th>
+                    <th>등급</th>
+                    <th>검토</th>
+                    <th>올린 시각</th>
+                    <th>보관 기한</th>
+                    <th>관리</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pageItems.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <Link
+                          to={`/analyses/${a.id}`}
+                          className="font-semibold underline-offset-4 hover:underline"
+                        >
+                          {a.fileName}
+                        </Link>
+                        {a.replay && (
+                          <Badge variant="outline" className="ml-2">
+                            재생 모드
+                          </Badge>
+                        )}
+                      </td>
+                      <td>{a.ownerEmail ?? a.ownerId}</td>
+                      <td className="whitespace-nowrap">
+                        {STATUS_LABELS[a.status]}
+                        {a.errorCode && (
+                          <span className="ml-1 text-xs text-destructive">{a.errorCode}</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap">
+                        {a.riskGrade ? GRADE_LABELS[a.riskGrade] : '-'}
+                      </td>
+                      <td className="whitespace-nowrap">
+                        {a.status === 'COMPLETED' ? REVIEW_LABELS[a.reviewStatus] : '-'}
+                      </td>
+                      <td className="whitespace-nowrap text-muted-foreground">
+                        {formatDateTime(a.createdAt)}
+                      </td>
+                      <td className="whitespace-nowrap text-muted-foreground">
+                        {a.purgedAt ? '정리됨' : formatDateTime(a.expiresAt)}
+                      </td>
+                      <td>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label={`${a.fileName} 삭제`}
+                          title={
+                            isInProgress(a.status)
+                              ? '진행 중인 분석은 끝난 뒤 지울 수 있습니다.'
+                              : undefined
+                          }
+                          disabled={isInProgress(a.status) || remove.isPending}
+                          onClick={() => onDelete(a)}
+                        >
+                          삭제
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              total={list.data.length}
+              onChange={goTo}
+            />
           </div>
         )}
       </PageBody>
