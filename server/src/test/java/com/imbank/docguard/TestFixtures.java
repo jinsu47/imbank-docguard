@@ -26,6 +26,8 @@ public final class TestFixtures {
     public static final Path API_RAW_DIR = EVAL.resolve("testmdfile/api-20261106-111210");
     public static final Path V25_REPORTS = EVAL.resolve("testmdfile/v2.5");
     public static final Path ANSWER_KEY = EVAL.resolve("answer_key.json");
+    public static final Path ANSWER_KEY_V3 = EVAL.resolve("answer_key_v3.json");
+    public static final Path V32_REPORTS = EVAL.resolveSibling("studio").resolve("benchmark/v3.2");
 
     private static final SecureRandom RANDOM = new SecureRandom();
 

@@ -346,6 +346,17 @@ class AnalysisFlowIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("등급 미확정을 저장하고 UNDECIDED 로 돌려준다(V2 제약 조건)")
+    void undecidedGradeIsStored() throws Exception {
+        AuthUser inspector = createUser(Role.INSPECTOR);
+        UUID id = uploadAndComplete(inspector);
+
+        jdbc.update("UPDATE analyses SET risk_grade = 'UNDECIDED' WHERE id = ?", id);
+
+        assertThat(detail(inspector, id).path("summary").path("riskGrade").asText()).isEqualTo("UNDECIDED");
+    }
+
+    @Test
     @DisplayName("소유자 삭제: 원본·결과·발견 항목을 지우고 감사 기록을 남긴다")
     void deleteByOwner() throws Exception {
         AuthUser inspector = createUser(Role.INSPECTOR);

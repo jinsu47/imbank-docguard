@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * Studio 보고서에서 등급, 사람 검토 여부, 항목별 문단을 읽습니다 (ARCHITECTURE.md 4장 "보고서 해석 규칙").
  * 규칙은 {@code eval/compare.py}의 {@code parse_report}와 같습니다.
  * <ul>
- *   <li>{@code 위험 등급: (잠정 )?(상|중|하|노출 없음)} 줄에서 등급을 읽습니다.</li>
+ *   <li>{@code 위험 등급: (잠정 )?(상|중|하|미확정|노출 없음)} 줄에서 등급을 읽습니다.</li>
  *   <li>{@code 사람 검토: (필요|불필요)} 줄에서 사람 검토 여부를 읽습니다.</li>
  *   <li>어느 줄이든 읽지 못하면 등급 UNKNOWN, 사람 검토 필요로 둡니다(BR02). 등급을 추측하지 않습니다.</li>
  * </ul>
@@ -22,7 +22,7 @@ public final class ReportParser {
             "요약", "발견된 문제", "판정 근거", "정책 연결 상태", "적용한 공식 근거", "활용 맥락", "추가 확인 및 조치", "점검 범위");
 
     private static final Pattern CITATION = Pattern.compile("【†\\d+】");
-    private static final Pattern GRADE = Pattern.compile("위험 등급\\s*[:\\n]\\s*(잠정\\s*)?(노출 없음|상|중|하)");
+    private static final Pattern GRADE = Pattern.compile("위험 등급\\s*[:\\n]\\s*(잠정\\s*)?(노출 없음|미확정|상|중|하)");
     private static final Pattern REVIEW = Pattern.compile("사람 검토\\s*[:\\n]\\s*(불필요|필요)\\.?\\s*([^\\n]*)");
     private static final Pattern SECTION = Pattern.compile(
             "(?m)^\\s*(" + String.join("|", SECTION_TITLES) + ")\\s*:\\s*");
@@ -71,14 +71,20 @@ public final class ReportParser {
         int start = 0;
         while (m.find()) {
             if (title != null) {
-                result.putIfAbsent(title, report.substring(start, m.start()).strip());
+                append(result, title, report.substring(start, m.start()));
             }
             title = m.group(1);
             start = m.end();
         }
         if (title != null) {
-            result.putIfAbsent(title, report.substring(start).strip());
+            append(result, title, report.substring(start));
         }
         return result;
+    }
+
+    /** 모델이 같은 제목을 반복해도 문단을 버리지 않고 나온 순서대로 줄바꿈으로 잇습니다. */
+    private static void append(Map<String, String> sections, String title, String body) {
+        sections.merge(title, body.strip(),
+                (first, next) -> first.isEmpty() ? next : next.isEmpty() ? first : first + "\n" + next);
     }
 }

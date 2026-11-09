@@ -153,7 +153,7 @@ class AdminIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("시연 정확도: 재생 모드 결과는 빼고, 실제 실행 결과를 정답표와 비교한다")
     void accuracy() throws Exception {
-        TestFixtures.requireEval(TestFixtures.ANSWER_KEY);
+        TestFixtures.requireEval(TestFixtures.ANSWER_KEY_V3);
         TestFixtures.requireEval(TestFixtures.API_RAW_DIR);
         AuthUser inspector = createUser(Role.INSPECTOR);
         String created = mockMvc.perform(multipart("/api/analyses")

@@ -1,7 +1,7 @@
 # 데이터베이스 구성
 
 - 프로젝트명: IM-BANK
-- 최종 수정일: 2026-11-08
+- 최종 수정일: 2026-11-09
 - 상태: draft
 
 PostgreSQL 16을 쓰고, 스키마는 Flyway(`server/src/main/resources/db/migration`)로 관리합니다. 용어는 [도메인 정의](./DOMAIN.md), 암호화와 보관 기간은 [보안](./SECURITY.md)을 따릅니다.
@@ -149,8 +149,8 @@ erDiagram
 | `studio_file_id`, `studio_job_id` | `varchar(64)` | NULL | | Studio 쪽 ID |
 | `document_type` | `varchar(50)` | NULL | | Classify 결과 (예: 예금) |
 | `document_type_confidence` | `numeric(4,3)` | NULL | | |
-| `risk_grade` | `varchar(10)` | NULL, CHECK IN (`HIGH`, `MEDIUM`, `LOW`, `NONE`, `UNKNOWN`) | | |
-| `grade_provisional` | `boolean` | NOT NULL, 기본 false | | 잠정 등급 |
+| `risk_grade` | `varchar(10)` | NULL, CHECK IN (`HIGH`, `MEDIUM`, `LOW`, `NONE`, `UNKNOWN`, `UNDECIDED`) | | `UNDECIDED`는 보고서의 미확정, `UNKNOWN`은 서버 해석 실패(V2 마이그레이션). `NONE`은 v2.5 기록용 |
+| `grade_provisional` | `boolean` | NOT NULL, 기본 false | | 잠정 등급. v3.2에서 폐기되어 v2.5 기록에만 true 가 있음 |
 | `review_required` | `boolean` | NULL | | Studio 판정의 사람 검토 여부 |
 | `review_status` | `varchar(20)` | NOT NULL, CHECK IN (`NOT_REQUIRED`, `PENDING`, `CONFIRMED`, `DISPUTED`) | | |
 | `parse_check_verdict`, `extract_check_verdict` | `varchar(10)` | NULL | | `green`, `yellow`, `red` |

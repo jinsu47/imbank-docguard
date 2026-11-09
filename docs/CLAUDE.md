@@ -1,18 +1,18 @@
 # IM-BANK 프로젝트 에이전트 지침
 
 - 프로젝트명: IM-BANK
-- 최종 수정일: 2026-11-08
+- 최종 수정일: 2026-11-09
 - 상태: draft
 
 이 문서는 `IM-BANK/` 디렉터리에서 새 채팅을 연 에이전트가 다른 설명 없이 작업을 이어 갈 수 있도록 맥락과 규칙을 담습니다.
 
 ## 1. 서비스 한 줄 요약
 
-금융기관 실무자가 금융문서를 올리면, Upstage Studio 워크플로(v2.5)가 민감정보를 찾아 위험 등급을 판정하고, 웹 서비스가 그 결과를 **문서 위 위치 표시, 판정 근거, 역할별 검토 흐름**과 함께 보여 줍니다. iM뱅크 주최 대회("AI기반 금융문서 민감정보 자동 식별 및 위험도 등급화") 출품작입니다.
+금융기관 실무자가 금융문서를 올리면, Upstage Studio 워크플로(v3.2)가 민감정보를 찾아 위험 등급을 판정하고, 웹 서비스가 그 결과를 **문서 위 위치 표시, 판정 근거, 역할별 검토 흐름**과 함께 보여 줍니다. iM뱅크 주최 대회("AI기반 금융문서 민감정보 자동 식별 및 위험도 등급화") 출품작입니다.
 
 ## 2. 지금까지의 경과
 
-1. **워크플로 (완료):** 팀원이 만든 원본 Studio 워크플로를 v2~v2.5로 고쳤습니다. v2.5는 평가 문서 10건에서 추출 행과 보고서 판정이 모두 정답과 일치했고, 2026-11-06 사용자가 최종본으로 정했습니다. 팀이 규칙 번호(R1, R2 등)를 원하면 같은 판정의 v2.4를 씁니다.
+1. **워크플로 (완료):** 팀원이 만든 원본 Studio 워크플로를 고쳐 왔고, 2026-11-09 팀 합의 정책(판본 2026-11-09.1)을 반영한 v3.2(Config 5)를 최종본으로 정했습니다. v3.2는 보고서 10건을 2회 실행해 두 번 모두 등급과 사람 검토가 정답표와 일치했으며, 같은 실행의 행 단위 채점은 미확인입니다. 이전 최종본 v2.5(Config 2)는 기록으로만 남깁니다.
 2. **API 호출 (완료):** 2026-11-06 v2.5를 Agents API로 호출하는 데 성공했습니다(set02 67초, set10 36초, 채점 2/2). 모든 요청에 `x-project-id` 헤더가 필요합니다.
 3. **웹 서비스 기획 (2026-11-08):** 이 디렉터리의 문서 7종을 작성했습니다. 사용자가 프런트엔드와 백엔드를 모두 구현합니다.
 4. **M0 골격 (2026-11-08 완료):** `docker-compose.yml`, `.env.example`, `scripts/create-env.*`, `server/`(Spring Boot 골격, `V1__init_schema.sql`, 최소 보안 설정), `web/`(Vite + React 빈 화면)을 만들었습니다. 8장에 결과가 있습니다.
@@ -35,12 +35,15 @@
 
 | 자료 | 내용 |
 |---|---|
-| WORKFLOW_CHANGES.md | 원본 워크플로에서 v2.5까지 바꾼 내용 (팀원용) |
+| WORKFLOW_CHANGES.md | 원본 워크플로에서 바꾼 내용 (팀원용) |
 | studio/README.md | 워크플로 버전, 검증 결과, **API 응답 구조 실측 표** |
-| `studio/mission2-v2.5-proposal.json` | 최종 워크플로 설정 (Studio 불러오기용) |
+| `studio/mission2-v3.2-proposal.json` | **최종 워크플로 설정** (Config 5, 정책판본 2026-11-09.1, Studio 불러오기용) |
+| `studio/mission2-v2.5-proposal.json` | 이전 최종본 (Config 2, 기록용) |
 | `studio/api_probe.py` | API 호출 시험 스크립트 (OpenAI Python SDK) |
 | eval/README.md | 평가 정답표와 채점 방법 |
+| `eval/answer_key_v3.json` | v3.2 정답표. 시연 정확도 화면이 씁니다 (`eval/answer_key.json`은 v2.5 보고서 파서 테스트용) |
 | `eval/compare.py` | 결과 채점 스크립트. `parse_report`가 서버 보고서 해석 규칙의 기준 |
+| `studio/benchmark/v3.2/` | v3.2 보고서 10건 × 2회. 서버 보고서 파서의 테스트 자료 |
 | `eval/testmdfile/v2.5/` | v2.5 실행 결과 10건 (보고서, 추출 JSON). 서버 보고서 파서의 테스트 자료 |
 | `eval/testmdfile/api-20261106-111210/` | API 원본 응답 2건 (`*_raw.json`). Studio 응답 변환기의 테스트 자료 |
 
@@ -69,6 +72,7 @@ cd web; npm install; npm run dev   # http://localhost:5173
 - `.env`는 `IM-BANK/` 루트 하나만 둡니다. Docker Compose와 서버(`application-local.yml`의 `spring.config.import`)가 같은 파일을 읽습니다.
 - 테스트는 `local` 프로필을 켜지 않으므로 `.env`를 읽지 않습니다. 테스트 DB는 Testcontainers가 만듭니다.
 - Upstage 값(`UPSTAGE_API_KEY`, `UPSTAGE_PROJECT_ID`, `UPSTAGE_AGENT_ID`)은 `.env`에 비어 있으며, 사용자가 직접 넣습니다. M1부터 필요합니다.
+- 최종본 v3.2를 쓰려면 `.env`에 `UPSTAGE_CONFIG_ID=5`를 지정합니다. `application.yml`과 `scripts/create-env.*`의 기본값은 `2`(v2.5)입니다.
 
 ## 5. 디렉터리 구조 규약
 
@@ -116,7 +120,7 @@ IM-BANK/
 - 인가는 컨트롤러가 아니라 서비스의 `AnalysisAccessPolicy`에서 확인합니다. 관리자는 모든 분석을 보고 관리할 수 있습니다(BR11).
 - JPA `ddl-auto: validate`, 스키마 변경은 Flyway 새 버전 파일로만 합니다.
 - 테스트:
-  - 보고서 파서: `eval/testmdfile/v2.5`의 보고서 10건으로 `eval/answer_key.json`의 등급·사람 검토와 같은지 확인합니다.
+  - 보고서 파서: `eval/testmdfile/v2.5`의 보고서 10건은 `eval/answer_key.json`, `studio/benchmark/v3.2`의 보고서 20건은 `eval/answer_key_v3.json`의 등급·사람 검토와 같은지 확인합니다(`ReportParserV32Test`).
   - 응답 변환기: `api-20261106-111210/*_raw.json`으로 확인합니다.
   - Studio 호출: 가짜 서버(MockRestServiceServer 또는 WireMock)로 시험합니다. **테스트에서 실제 Upstage API를 호출하지 않습니다.**
   - 권한: `AuthorizationMatrixTest`로 역할 × API 전체를 확인합니다.
@@ -133,7 +137,7 @@ IM-BANK/
 - 서버가 준 문자열을 HTML로 넣지 않습니다(`dangerouslySetInnerHTML` 금지).
 - 좌표는 0~1 상대값이므로, 백분율 위치(`features/viewer/boxes.ts`의 `toPercentRect`)로 페이지 위에 겹쳐 그립니다. 화면 크기가 바뀌어도 다시 계산할 필요가 없습니다.
 - 서버 상태는 TanStack Query 키로 관리합니다: `['me']`, `['analyses']`, `['analysis', id]`, `['analysis-result', id]`, `['analysis-file', id]`, `['reviews', 'queue']`. 진행 중이면 2초마다 다시 조회합니다.
-- 화면에는 내부 용어(미마스킹 등)를 쓰지 않고 쉬운 말(가림 없음 등)로 바꿉니다(`features/analysis/FindingList.tsx`의 `maskLabel`).
+- 화면에는 내부 용어(미마스킹 등)를 쓰지 않고 쉬운 말(가림 없음 등)로 바꿉니다(`features/analysis/FindingList.tsx`의 `maskLabel`, 보고서 문장은 서버의 `ReportDisplayText`).
 - 색과 모양은 `index.css`의 토큰(`bg-brand-navy`, `bg-tile-blue` 등)과 `.dg-*` 클래스를 씁니다. 외부 글꼴·이미지 주소를 쓰지 않습니다(CSP `default-src 'self'`).
 - 테스트: `web/npm test`(Vitest).
 
@@ -162,7 +166,7 @@ IM-BANK/
 
 ## 8. 현재 진행 단계와 다음 할 일
 
-**현재 단계:** P0·P1 기능 구현, 실제 API 연결 확인, 프런트엔드 디자인 적용 완료 (2026-11-08). 사용자가 `.env`에 키를 넣고 `UPSTAGE_MODE=live`로 바꿨습니다.
+**현재 단계:** P0·P1 기능 구현, 실제 API 연결 확인, 프런트엔드 디자인 적용 완료 (2026-11-08). 워크플로 최종본은 v3.2 입니다 (2026-11-09). 사용자가 `.env`에 키를 넣고 `UPSTAGE_MODE=live`로 바꿨습니다.
 
 **실제 API 첫 실행 (2026-11-08, set02):** 웹 서버로 set02 를 올려 Config 2 로 실행했습니다. 업로드부터 완료까지 약 50초(Studio 작업 29초)가 걸렸습니다. 웹 결과로 만든 추출·보고서를 `eval/compare.py --plain`으로 채점해 정답표와 완전히 일치했습니다. 추출 행은 11-06 API 실행과 같았습니다. 작업이 끝난 뒤 Studio 파일이 지워졌고, 서버 로그에 원문값·파일 이름·키가 없었습니다. **진행 중 응답에도 끝난 단계가 들어옵니다**(PARSE → … → REPORT 순서로 표시됨). 나머지 9건은 아직 웹에서 실행하지 않았습니다.
 
@@ -174,7 +178,7 @@ IM-BANK/
 - 관리자: `GET /api/admin/users`, `PATCH /api/admin/users/{id}`(역할·상태, 사유 선택, 자기 계정 변경 금지, 이전·새 값 감사 기록), `GET /api/admin/audit-logs`(행동·사용자·기간 필터, 페이지), `GET /api/admin/analyses`(메타데이터만, 파일 이름 없음). 화면 `/admin/users`, `/admin/audit`, `/admin/analyses`. 관리자가 `/`로 오면 계정 관리로 보냄.
 - 세션 즉시 반영: `SessionUserRefreshFilter`가 요청마다 사용자 상태를 확인해 관리자가 비활성화·잠근 계정은 세션을 끊고, 역할이 바뀌면 세션 권한을 바꿈. 로그인 실패 잠금(해제 시각 있음)은 끊지 않음(남이 로그인 중인 사용자를 내보내지 못하게).
 - 그 밖의 API 속도 제한: `ApiRateLimitFilter` 사용자(로그인 전은 IP)당 분당 300회.
-- 시연 정확도(F12): `GET /api/demo/accuracy` + `/demo/accuracy`. 내 완료 분석을 파일 이름의 setNN 으로 찾아 태그별 최근 결과를 정답표와 비교(재생 모드 제외). 정답표 경로는 `app.answer-key`(기본 `../eval/answer_key.json`, 없으면 화면에 안내).
+- 시연 정확도(F12): `GET /api/demo/accuracy` + `/demo/accuracy`. 내 완료 분석을 파일 이름의 setNN 으로 찾아 태그별 최근 결과를 정답표와 비교(재생 모드 제외). 정답표 경로는 `app.answer-key`(기본 `../eval/answer_key_v3.json`, 없으면 화면에 안내).
 - 가입 후 로그인 화면 안내, 분석 화면 지연 로딩(첫 번들 1.1MB → 466KB).
 - 테스트: 서버 72건, 웹 19건 통과. 화면 확인용으로 만든 `screen-*@docguard.local` 계정들은 비활성화해 둠.
 
@@ -200,11 +204,18 @@ IM-BANK/
 - 시연 정확도: `web/src/lib/features.ts`의 `SHOW_ACCURACY = false`로 메뉴와 경로를 숨김(주소로 들어가면 404 화면). 서버 API(`/api/demo/accuracy`)와 `AccuracyPage`는 남겨 둠.
 - 확인: 서버 테스트 74건, 웹 테스트 34건 통과. 자동 브라우저로 관리자가 다른 사람 문서 열기 → 원문 보기 → 검토 기록 → 삭제까지 통과했고 네 행동이 감사 기록에 남음(재생 모드 시험 분석 1건은 이 과정에서 삭제됨).
 
+**워크플로 v3.2 연결 (2026-11-09, 사용자 결정):** 최종본이 `studio/mission2-v3.2-proposal.json`(Config 5, 정책판본 2026-11-09.1)으로 바뀌었습니다. 이전 최종본 v2.5(Config 2)는 기록으로만 남깁니다.
+- 등급은 상·중·하·미확정입니다. 미확정은 네 번째 위험 등급이 아니며, 서버는 읽기 실패(`UNKNOWN`)와 구분해 `UNDECIDED`로 저장하고(V2 마이그레이션) 화면에 "미확정"으로 표시합니다. 기준은 R1 「고유식별번호 노출」 상(일부 가림 포함), R5 「건강정보 노출」 상, R2 「본인 금융정보 결합 노출」 상, R3 「식별·연락·계좌 정보 노출」 중, R4 「그 밖의 개인 보호정보 노출」 중, R0 「규칙상 노출 미발견」 하입니다. R1P·R2T·R2Q·"노출 없음"·"잠정"은 폐기되었습니다.
+- 검증: 보고서 10건을 2회 실행해 두 번 모두 등급 10/10, 사람 검토 10/10입니다(`eval/answer_key_v3.json`). 같은 실행의 추출 JSON 이 없어 행 단위 채점은 미확인입니다. 자세한 내용은 `studio/README.md`와 `eval/results-v3.2*.md`에 있습니다.
+- 서버: `ReportParser`가 `미확정`을 읽고, 반복된 제목의 문단을 나온 순서대로 줄바꿈으로 잇습니다. 화면에 줄 때 저장 원문에서 다시 읽으므로 이미 저장된 결과에도 적용됩니다. `ReportDisplayText`가 보고서 문단과 사람 검토 사유의 가림 용어를 화면용으로 바꿉니다(저장 원문과 【†n】은 유지). 시연 정확도 정답표 기본값은 `eval/answer_key_v3.json`입니다. 상 등급 보고서의 「그 밖의 개인 보호정보 노출」 문장을 서버가 판단해서 지우지 않습니다(프롬프트에서 다룸).
+- 설정: 로컬 `.env`의 Agent ID 와 `UPSTAGE_CONFIG_ID=5`를 v3.2 로 바꿨습니다. `application.yml`과 `scripts/create-env.*`의 기본값은 `2`로 남아 있으므로 새 환경에서는 직접 지정합니다. 단계 이름과 종류는 v2.5 와 같습니다.
+- 확인: 서버 테스트 93건(v3.2 보고서 20건 포함), 웹 테스트 42건 통과, 반복 문단의 줄바꿈은 재생 모드 화면에서 확인했습니다. 실제 Studio 를 웹에서 v3.2 로 호출하지는 않았습니다. 2026-11-09 공개 서버에 반영했습니다(V2 마이그레이션 적용, 서버 환경 변수의 Agent ID·`UPSTAGE_CONFIG_ID=5` 변경). 서버에 이전 설정과 jar 를 `docguard.env.v2.5`, `app.jar.v2.5`로 남겨 두었습니다. `push-upstage-keys.sh`는 Config ID 를 옮기지 않으므로 환경을 새로 만들 때 직접 지정합니다.
+
 **공개 배포 보안 수정 (2026-11-08):** 배포 후 점검에서 로그인 없이 보낸 multipart 본문이 거절 전에 서버 임시 폴더에 전부 저장되는 것을 발견해 고쳤습니다. `MultipartGuardFilter`, `SpaCsrfTokenRequestHandler`(multipart 는 헤더만), Caddy 본문 1MB 제한(업로드 주소 제외)입니다. 공개 서버에서 30MB 를 5가지 경로로 보내 임시 파일 0개, 0.1초 안에 거절됨을 확인했습니다. 서버 보안 업데이트를 적용해 재부팅했고 자동 보안 업데이트를 켰습니다(`linux-generic` 등 3개는 이미지에서 hold 되어 있어 건드리지 않음). 서버 테스트 84건 통과.
 - 테스트 주의: 업로드(`/api/analyses`)는 `csrf()` 대신 `IntegrationTestBase.csrfHeader()`를 씁니다.
 - 남은 보안 일: 코드 전체 보안 검토, 서버(Java) 라이브러리 취약점 검사, 서버의 `accounts.txt` 삭제, DB 백업, 공개 주소에서 로그인·실제 분석 확인.
 
-**네이버클라우드 배포 준비 (2026-11-08, 사용자 요청):** 새 서버에 올리고, `<IP>.sslip.io` 주소로 HTTPS 공개, 회원가입은 닫기로 정했습니다. 절차는 `deploy/README.md`, 설치 스크립트는 `deploy/`에 있습니다(미커밋). 2026-11-08 새 서버에 배포를 마쳤고, 주소와 접속 정보는 `.local/deploy.txt`에 있습니다.
+**네이버클라우드 배포 준비 (2026-11-08, 사용자 요청):** 새 서버에 올리고, `<IP>.sslip.io` 주소로 HTTPS 공개, 회원가입은 닫기로 정했습니다. 절차는 `deploy/README.md`, 설치 스크립트는 `deploy/`에 있습니다. 2026-11-08 새 서버에 배포를 마쳤고, 주소와 접속 정보는 `.local/deploy.txt`에 있습니다.
 - 공개 주소 확인: 인증서 정상, HTTP→HTTPS 이동, 화면 경로 200, 인증 없는 API 401, 가입 403, 쿠키 Secure, 8080·5432 외부 차단, 서버에서 Upstage 파일 목록 200. 계정 로그인과 실제 문서 분석은 사용자 확인이 남아 있습니다.
 - 네이버클라우드 주의: 서버가 상권분석 챗봇과 같은 Subnet 이라 같은 Network ACL 을 씁니다. 재배포는 `bash deploy/deploy.sh <IP>`(Git Bash)이며, 이 PC 의 키에는 암호가 있어 Windows ssh 를 씁니다.
 - 서버: `SpaResourceConfig`(jar 안의 React 빌드 제공, 화면 경로는 index.html), `SecurityConfig`(API 가 아닌 GET 공개), `application-prod.yml`(127.0.0.1 바인딩, 프록시 헤더), `APP_SIGNUP_ENABLED`. jar 는 `gradlew bootJar -PwebDist=../web/dist`로 만듭니다.
@@ -217,7 +228,7 @@ IM-BANK/
 - 제한 시간: `StudioService.jobTimeoutSec(pageCount)`가 기본값(600초)과 쪽수 × 60초 중 큰 값을 씁니다.
 - 문서 칸: 모든 쪽을 고해상도로 한꺼번에 그리면 브라우저 메모리가 부족해지므로, 쪽 크기만 먼저 읽어 자리를 잡고 `LazyPdfPage`가 칸에서 1,200px 안에 들어온 쪽만 그립니다. 가림 상자(`Marks`)는 모든 쪽에 있어 위치 이동이 그대로 됩니다. `react-pdf` 11의 `Page`는 기본으로 Suspense 를 쓰므로 쪽마다 `Suspense` 경계를 둡니다(없으면 새 쪽을 그릴 때 화면 전체가 대기 화면으로 바뀌고 스크롤이 초기화됨).
 - 확인: 서버 테스트 79건, 웹 테스트 37건 통과. 재생 모드 서버와 자동 브라우저로 30MB·60쪽 PDF 를 올려 처리 완료, 한 번에 3~5쪽만 그림, 가로 쪽 비율 일치, 50쪽에서 1쪽 항목을 골랐을 때 칸 정중앙으로 이동함을 확인했습니다. 실제 Studio 로 긴 문서를 돌려 보지는 않았습니다.
-- 남은 한계: Studio 한도(500MB, 1,000쪽)를 넘으면 실패합니다. 서버는 파일을 메모리에 올려 처리합니다. v2.5 는 1~2쪽 문서로만 검증했으므로 긴 문서의 판정 품질·시간·사용량은 확인이 필요합니다.
+- 남은 한계: Studio 한도(500MB, 1,000쪽)를 넘으면 실패합니다. 서버는 파일을 메모리에 올려 처리합니다. v3.2 도 1~2쪽 문서로만 검증했으므로 긴 문서의 판정 품질·시간·사용량은 확인이 필요합니다.
 
 **API 키 연동 전 구현 결과 (2026-11-08 확인):**
 
@@ -252,11 +263,12 @@ IM-BANK/
 
 **다음 할 일:**
 
-1. 나머지 평가 문서 9건을 웹에서 실행해 10건 채점(F12 시연 정확도 화면의 근거).
+1. 평가 문서 10건을 웹에서 v3.2 로 실행해 채점(F12 시연 정확도 화면의 근거).
 2. 시연 정확도 화면은 사용자 요청으로 사이트에서 숨겨 두었습니다(아래 참고). 다시 쓰려면 `web/src/lib/features.ts`의 `SHOW_ACCURACY`를 켭니다.
 3. P2 기능(사용자 결정 후): 가린 PDF 다운로드(F13), 여러 문서 한 번에 올리기(F14), 외부 배포(F15). 감사 기록 1년 보관 정리 작업도 아직 없습니다(보관 기간 TBD).
 4. 네이버클라우드 배포는 끝났습니다. 공개 주소에서 로그인과 실제 문서 분석을 확인합니다.
-5. 문서와 다른 점을 기획 문서에 반영할지 사용자에게 확인: `UPSTAGE_MODE`·`UPSTAGE_REPLAY_DIR` 환경 변수, `POST /api/analyses/{id}/retry`, `GET /api/admin/analyses`, `GET /api/demo/accuracy`, 상태 조회기 위치(analysis 패키지), 암호화 결과 JSON 의 키 이름(영문).
+5. 공개 주소에서 v3.2 로 실제 문서 분석을 확인합니다.
+6. 문서와 다른 점을 기획 문서에 반영할지 사용자에게 확인: `UPSTAGE_MODE`·`UPSTAGE_REPLAY_DIR` 환경 변수, `POST /api/analyses/{id}/retry`, `GET /api/admin/analyses`, `GET /api/demo/accuracy`, 상태 조회기 위치(analysis 패키지), 암호화 결과 JSON 의 키 이름(영문).
 
 **사용자 결정 대기 (TBD):**
 

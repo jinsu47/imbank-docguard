@@ -61,6 +61,14 @@ export function ResultSummary({ detail, result }: { detail: AnalysisDetail; resu
           </AlertDescription>
         </Alert>
       )}
+      {s.riskGrade === 'UNDECIDED' && (
+        <Alert>
+          <AlertTitle>위험 등급 미확정</AlertTitle>
+          <AlertDescription>
+            자동 점검으로 위험 등급을 확정할 수 없는 문서입니다. 사람 검토 사유를 확인해 주세요.
+          </AlertDescription>
+        </Alert>
+      )}
       {s.reviewRequired && result?.reviewReason && (
         <p className="border-l-[3px] border-brand-navy bg-secondary/60 px-4 py-3 text-sm">
           <span className="font-bold">사람 검토 사유: </span>

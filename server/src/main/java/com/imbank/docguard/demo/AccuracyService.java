@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 시연 정확도 (F12, US08). 내가 웹에서 실행한 평가 문서의 등급·사람 검토를 정답표(eval/answer_key.json)와 비교합니다.
+ * 시연 정확도 (F12, US08). 내가 웹에서 실행한 평가 문서의 등급·사람 검토를 정답표(eval/answer_key_v3.json)와 비교합니다.
  * <ul>
  *   <li>판정을 새로 내리지 않습니다. 저장된 Studio 판정을 정답표와 나란히 놓을 뿐입니다(BR01).</li>
  *   <li>문서는 파일 이름에 들어 있는 태그(set01 등)로 찾고, 태그마다 가장 최근에 완료된 분석을 씁니다.</li>
@@ -47,7 +47,7 @@ public class AccuracyService {
     private final Path answerKey;
 
     public AccuracyService(AnalysisRepository analyses, EncryptionService encryption, ObjectMapper objectMapper,
-                           @Value("${app.answer-key:../eval/answer_key.json}") String answerKey) {
+                           @Value("${app.answer-key:../eval/answer_key_v3.json}") String answerKey) {
         this.analyses = analyses;
         this.encryption = encryption;
         this.objectMapper = objectMapper;
@@ -55,7 +55,7 @@ public class AccuracyService {
     }
 
     /**
-     * @param expectedGrade  정답 등급(보고서 표기: 상·중·하·노출 없음, 잠정이면 앞에 "잠정")
+     * @param expectedGrade  정답 등급(보고서 표기: 상·중·하, 잠정이면 앞에 "잠정")
      * @param actualGrade    웹 실행 등급(같은 표기). 실행한 분석이 없으면 null
      * @param match          등급과 사람 검토가 모두 같으면 true, 실행 전이면 null
      */

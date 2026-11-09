@@ -31,11 +31,11 @@ class SchemaMigrationIntegrationTest extends IntegrationTestBase {
     JdbcTemplate jdbc;
 
     @Test
-    @DisplayName("Flyway V1 이 적용되고 DATABASE.md 의 테이블 6개가 만들어진다")
+    @DisplayName("Flyway 마이그레이션이 모두 적용되고 DATABASE.md 의 테이블 6개가 만들어진다")
     void flywayAppliesV1() {
         MigrationInfo current = flyway.info().current();
         assertThat(current).isNotNull();
-        assertThat(current.getVersion().getVersion()).isEqualTo("1");
+        assertThat(current.getVersion().getVersion()).isEqualTo("2");
         assertThat(current.getState().isApplied()).isTrue();
 
         List<String> tables = jdbc.queryForList("""

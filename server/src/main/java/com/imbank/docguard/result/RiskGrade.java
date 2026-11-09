@@ -1,12 +1,13 @@
 package com.imbank.docguard.result;
 
-/** 위험 등급 (DOMAIN.md 1장). UNKNOWN 은 서버가 보고서를 해석하지 못한 경우에만 씁니다. */
+/** 위험 등급 (DOMAIN.md 1장). UNKNOWN 은 서버가 보고서를 해석하지 못한 경우에만 씁니다. UNDECIDED 는 보고서가 등급을 미확정으로 적은 경우입니다. */
 public enum RiskGrade {
     HIGH("상"),
     MEDIUM("중"),
     LOW("하"),
     NONE("노출 없음"),
-    UNKNOWN("판정 확인 필요");
+    UNKNOWN("판정 확인 필요"),
+    UNDECIDED("미확정");
 
     private final String label;
 
@@ -24,6 +25,7 @@ public enum RiskGrade {
             case "중" -> MEDIUM;
             case "하" -> LOW;
             case "노출 없음" -> NONE;
+            case "미확정" -> UNDECIDED;
             default -> UNKNOWN;
         };
     }

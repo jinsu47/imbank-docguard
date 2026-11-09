@@ -1,6 +1,6 @@
 import type { AnalysisStatus, ReviewStatus, RiskGrade } from '@/api/types'
 
-// 화면 문구. 등급은 보고서 표기(상·중·하·노출 없음)를 그대로 씁니다(DOMAIN.md 1장).
+// 화면 문구. 등급은 보고서 표기(상·중·하·미확정)를 그대로 씁니다(DOMAIN.md 1장). 노출 없음은 v2.5 기록용입니다.
 
 export const GRADE_LABELS: Record<RiskGrade, string> = {
   HIGH: '상',
@@ -8,6 +8,7 @@ export const GRADE_LABELS: Record<RiskGrade, string> = {
   LOW: '하',
   NONE: '노출 없음',
   UNKNOWN: '판정 확인 필요',
+  UNDECIDED: '미확정',
 }
 
 export const GRADE_STYLES: Record<RiskGrade, string> = {
@@ -16,6 +17,7 @@ export const GRADE_STYLES: Record<RiskGrade, string> = {
   LOW: 'bg-tile-blue text-white',
   NONE: 'bg-tile-teal text-white',
   UNKNOWN: 'bg-brand-slate text-white',
+  UNDECIDED: 'bg-brand-slate text-white',
 }
 
 export const STATUS_LABELS: Record<AnalysisStatus, string> = {

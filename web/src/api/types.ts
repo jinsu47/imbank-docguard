@@ -10,7 +10,7 @@ export interface Me {
 }
 
 export type AnalysisStatus = 'UPLOADING' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'PURGED'
-export type RiskGrade = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE' | 'UNKNOWN'
+export type RiskGrade = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE' | 'UNKNOWN' | 'UNDECIDED'
 export type ReviewStatus = 'NOT_REQUIRED' | 'PENDING' | 'CONFIRMED' | 'DISPUTED'
 export type ReviewDecision = 'CONFIRMED' | 'DISPUTED'
 

@@ -79,24 +79,32 @@ public class AnalysisResultService {
                 .toList();
 
         List<ResultDtos.Section> sections = new ArrayList<>();
-        Map<String, String> bySection = payload.report().sections() == null ? Map.of() : payload.report().sections();
+        Map<String, String> bySection = displaySections(payload.report());
         for (String title : ReportParser.SECTION_TITLES) {
             if (bySection.containsKey(title)) {
-                sections.add(new ResultDtos.Section(title, bySection.get(title)));
+                sections.add(new ResultDtos.Section(title, ReportDisplayText.of(bySection.get(title))));
             }
         }
         List<ResultDtos.CitationView> citations = payload.citations() == null ? List.of() : payload.citations().stream()
                 .map(c -> new ResultDtos.CitationView(c.index(), c.rowIndex(), c.field(), c.page(), c.wordBoxes(),
                         c.elementBox()))
                 .toList();
-        return new ResultDtos.ResultView(sections, payload.report().reviewReason(), views, citations);
+        return new ResultDtos.ResultView(sections, ReportDisplayText.of(payload.report().reviewReason()), views, citations);
+    }
+
+    /** 저장 원문에서 다시 읽어, 제목 반복 처리 전에 저장된 결과도 문단이 모두 보이게 합니다. */
+    static Map<String, String> displaySections(ResultPayload.Report report) {
+        if (report.raw() != null && !report.raw().isBlank()) {
+            return ReportParser.parse(report.raw()).sections();
+        }
+        return report.sections() == null ? Map.of() : report.sections();
     }
 
     @Transactional(readOnly = true)
     public List<ResultDtos.RevealedFinding> reveal(UUID analysisId) {
         return load(analysisId).findings().stream()
                 .map(f -> new ResultDtos.RevealedFinding(f.rowIndex(), f.rawValue(), f.evidence(), f.subjectBasis(),
-                        f.reviewReason()))
+                        ReportDisplayText.of(f.reviewReason())))
                 .toList();
     }
 
