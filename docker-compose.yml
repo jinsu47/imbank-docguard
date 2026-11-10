@@ -1,0 +1,26 @@
+# 로컬 개발용 PostgreSQL 16 (ARCHITECTURE.md 6장)
+# 먼저 scripts/create-env.ps1 (또는 create-env.sh)로 이 디렉터리에 .env 를 만듭니다. DB_PASSWORD 를 그 파일에서 읽습니다.
+# 실행: docker compose up -d   /   중지: docker compose down   /   데이터까지 삭제: docker compose down -v
+# 다른 프로젝트가 5432, 5433 을 쓰므로 호스트 포트는 5434 입니다.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: docguard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docguard
+      POSTGRES_USER: docguard
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?.env 에 DB_PASSWORD 가 없습니다. scripts/create-env 를 먼저 실행하세요}"
+      TZ: Asia/Seoul
+    ports:
+      - "5434:5432"
+    volumes:
+      - docguard-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docguard -d docguard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  docguard-pgdata:

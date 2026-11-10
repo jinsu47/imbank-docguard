@@ -41,3 +41,11 @@ tmp/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Java / Gradle
+.gradle/
+*.iml
+
+# Local runtime data (account passwords, encrypted uploads)
+/.local/
+/storage/

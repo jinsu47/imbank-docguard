@@ -1,0 +1,19 @@
+package com.imbank.docguard.audit;
+
+/** 감사 기록 행동 (SECURITY.md 7장) */
+public enum AuditAction {
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+    LOGOUT,
+    ACCOUNT_LOCKED,
+    SIGNUP,
+    ANALYSIS_CREATED,
+    ANALYSIS_DELETED,
+    ANALYSIS_PURGED,
+    RAW_VALUE_REVEALED,
+    ORIGINAL_FILE_VIEWED,
+    RESULT_EXPORTED,
+    REVIEW_RECORDED,
+    USER_ROLE_CHANGED,
+    USER_STATUS_CHANGED
+}
