@@ -92,7 +92,10 @@ export default function SignupPage() {
               올린 문서는 분석을 위해 외부 서비스(Upstage)로 보내며, 분석이 끝나면 그쪽 파일을
               지웁니다.
             </li>
-            <li>원본과 상세 결과는 암호화해 보관하고, 보관 기간(기본 7일)이 지나면 지웁니다.</li>
+            <li>
+              원본과 상세 결과는 암호화해 보관합니다. 기본 7일이 지나면 관리자에게 삭제를 권고하고,
+              관리자가 지웁니다.
+            </li>
           </ul>
           <label className="mt-3 flex items-center gap-2 font-medium">
             <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />

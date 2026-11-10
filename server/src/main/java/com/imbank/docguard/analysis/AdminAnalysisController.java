@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,22 +39,33 @@ public class AdminAnalysisController {
 
     public record AnalysisMeta(UUID id, String fileName, Long ownerId, String ownerEmail, AnalysisStatus status,
                                RiskGrade riskGrade, ReviewStatus reviewStatus, String errorCode, Instant createdAt,
-                               Instant completedAt, Instant expiresAt, Instant purgedAt, boolean replay) {
+                               Instant completedAt, Instant expiresAt, Instant purgedAt, boolean replay,
+                               boolean deletionRecommended) {
     }
 
     @GetMapping
     @Transactional(readOnly = true)
     public List<AnalysisMeta> list() {
-        List<Analysis> page = analyses.findAll(PageRequest.of(0, 200, Sort.by(Sort.Direction.DESC, "createdAt")))
+        Instant now = Instant.now();
+        List<Analysis> recent = analyses.findAll(PageRequest.of(0, 200, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .getContent();
+        List<Analysis> page = withRecommended(recent, analyses.findDeletionRecommended(now));
         Map<Long, String> emails = users.findAllById(page.stream().map(Analysis::getOwnerId).collect(Collectors.toSet()))
                 .stream().collect(Collectors.toMap(User::getId, User::getEmail, (a, b) -> a));
         return page.stream()
                 .map(a -> new AnalysisMeta(a.getId(), fileName(a), a.getOwnerId(), emails.get(a.getOwnerId()),
                         a.getStatus(), a.getRiskGrade(), a.getReviewStatus(), a.getErrorCode(), a.getCreatedAt(),
                         a.getCompletedAt(), a.getExpiresAt(), a.getPurgedAt(),
-                        StudioService.REPLAY_AGENT_ID.equals(a.getStudioAgentId())))
+                        StudioService.REPLAY_AGENT_ID.equals(a.getStudioAgentId()), a.isDeletionRecommended(now)))
                 .toList();
+    }
+
+    /** 삭제를 권고할 문서는 오래된 문서이므로, 최근 목록 밖에 있어도 빠지지 않게 합칩니다(BR15). */
+    static List<Analysis> withRecommended(List<Analysis> recent, List<Analysis> recommended) {
+        Map<UUID, Analysis> merged = new LinkedHashMap<>();
+        recent.forEach(a -> merged.put(a.getId(), a));
+        recommended.forEach(a -> merged.putIfAbsent(a.getId(), a));
+        return merged.values().stream().sorted(Comparator.comparing(Analysis::getCreatedAt).reversed()).toList();
     }
 
     private String fileName(Analysis a) {

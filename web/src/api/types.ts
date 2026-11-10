@@ -184,6 +184,8 @@ export interface AdminAnalysis {
   expiresAt: string
   purgedAt?: string
   replay: boolean
+  /** 보관 기간이 지나 삭제를 권고하는 문서 (BR15) */
+  deletionRecommended: boolean
 }
 
 // 시연 정확도 (F12)

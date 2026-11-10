@@ -10,6 +10,8 @@ const GRADE_ROUTE_LABELS: Record<GradeRoute, string> = {
   RULE: '고위험 규칙으로 판정',
   DECISION: 'AI가 기준표로 판정',
 }
+// v4 부터 하 등급은 R0 「규칙상 노출 미발견」에서만 나옵니다. 안전하다는 단정이 아니므로 확인 범위를 함께 씁니다.
+const NO_EXPOSURE_NOTE = '규칙상 노출 미발견 (확인한 범위 기준)'
 
 /** 결과 상단 (F03): 위험 등급·사람 검토·문서 종류·발견 항목을 색면 타일로 보여 주고, 아래에 요약을 둡니다. */
 export function ResultSummary({ detail, result }: { detail: AnalysisDetail; result?: ResultView }) {
@@ -22,6 +24,11 @@ export function ResultSummary({ detail, result }: { detail: AnalysisDetail; resu
       .join('')
   const grade = s.riskGrade ?? 'UNKNOWN'
   const gradeLabel = (s.gradeProvisional ? '잠정 ' : '') + GRADE_LABELS[grade]
+  const gradeNote =
+    result?.gradeRoute &&
+    [grade === 'LOW' ? NO_EXPOSURE_NOTE : undefined, GRADE_ROUTE_LABELS[result.gradeRoute]]
+      .filter(Boolean)
+      .join(' · ')
 
   return (
     <section className="grid gap-4">
@@ -29,7 +36,7 @@ export function ResultSummary({ detail, result }: { detail: AnalysisDetail; resu
         <SummaryTile
           label="위험 등급"
           value={gradeLabel}
-          note={result?.gradeRoute && GRADE_ROUTE_LABELS[result.gradeRoute]}
+          note={gradeNote}
           className={GRADE_STYLES[grade]}
         />
         <SummaryTile

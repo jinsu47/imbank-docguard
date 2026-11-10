@@ -150,6 +150,62 @@ class AdminIntegrationTest extends IntegrationTestBase {
         assertThat(body).contains("고객이름_set02.pdf").contains(inspector.email());
     }
 
+    private JsonNode adminRow(AuthUser admin, UUID id) throws Exception {
+        JsonNode rows = objectMapper.readTree(mockMvc.perform(get("/api/admin/analyses").with(as(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        for (JsonNode row : rows) {
+            if (row.path("id").asText().equals(id.toString())) {
+                return row;
+            }
+        }
+        return null;
+    }
+
+    private UUID uploadPdf(AuthUser user) throws Exception {
+        String created = mockMvc.perform(multipart("/api/analyses")
+                        .file(new MockMultipartFile("file", "금융보안원_미션2_set02.pdf", "application/pdf", TestFixtures.pdf(1)))
+                        .with(as(user)).with(csrfHeader()))
+                .andExpect(status().isAccepted())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(objectMapper.readTree(created).path("id").asText());
+    }
+
+    @Test
+    @DisplayName("BR15: 보관 기간이 지나도 지우지 않고 삭제 권고만 표시하며, 관리자가 지우면 목록에서 빠진다")
+    void deletionRecommendedAfterRetention() throws Exception {
+        TestFixtures.requireEval(TestFixtures.API_RAW_DIR);
+        AuthUser admin = createUser(Role.ADMIN);
+        AuthUser inspector = createUser(Role.INSPECTOR);
+        UUID id = uploadPdf(inspector);
+        processor.processAll();
+        processor.processAll();
+        assertThat(adminRow(admin, id).path("deletionRecommended").asBoolean()).isFalse();
+
+        jdbc.update("UPDATE analyses SET expires_at = now() - interval '1 hour' WHERE id = ?", id);
+
+        JsonNode row = adminRow(admin, id);
+        assertThat(row.path("deletionRecommended").asBoolean()).isTrue();
+        assertThat(row.path("status").asText()).isEqualTo("COMPLETED");
+        mockMvc.perform(get("/api/analyses/" + id + "/result").with(as(inspector))).andExpect(status().isOk());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/analyses/" + id)
+                        .with(as(admin))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isNoContent());
+        assertThat(adminRow(admin, id)).isNull();
+    }
+
+    @Test
+    @DisplayName("BR15: 진행 중인 분석은 기간이 지나도 삭제를 권고하지 않는다")
+    void inProgressIsNotRecommended() throws Exception {
+        AuthUser admin = createUser(Role.ADMIN);
+        AuthUser inspector = createUser(Role.INSPECTOR);
+        UUID id = uploadPdf(inspector);
+        jdbc.update("UPDATE analyses SET expires_at = now() - interval '1 hour' WHERE id = ?", id);
+
+        assertThat(adminRow(admin, id).path("deletionRecommended").asBoolean()).isFalse();
+    }
+
     @Test
     @DisplayName("시연 정확도: 재생 모드 결과는 빼고, 실제 실행 결과를 정답표와 비교한다")
     void accuracy() throws Exception {

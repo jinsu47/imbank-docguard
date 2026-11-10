@@ -11,7 +11,7 @@ PostgreSQL 16을 쓰고, 스키마는 Flyway(`server/src/main/resources/db/migra
 - **원문값은 평문 컬럼에 두지 않습니다.** 발견 항목의 원문값, 원문 근거, 보고서 본문, Studio 원본 응답은 모두 `analysis_results.encrypted_payload` 한 곳에 AES-256-GCM으로 암호화해 둡니다.
 - 검색과 목록에 필요한 값(등급, 정보 유형, 가림 상태 등)만 평문 컬럼으로 둡니다. 이 값들만으로는 개인을 알아볼 수 없습니다.
 - 원본 파일은 DB가 아니라 파일 저장소(`APP_STORAGE_DIR`)에 암호화해 두고, DB에는 경로와 해시만 둡니다.
-- 보관 기간이 지나면 원본 파일과 `analysis_results`, `findings`를 지우고 `analyses`의 요약만 남깁니다.
+- 보관 기간이 지나도 자동으로 지우지 않고 관리자에게 삭제를 권고합니다. 원본 파일과 `analysis_results`, `findings`는 관리자나 소유자가 지울 때까지 남습니다.
 
 ## 2. ERD
 
@@ -158,7 +158,7 @@ erDiagram
 | `completed_steps` | `jsonb` | NOT NULL, 기본 `[]` | | 끝난 단계 이름 목록(진행 표시용) |
 | `error_code` | `varchar(40)` | NULL | | `STUDIO_TIMEOUT`, `STUDIO_JOB_FAILED`, `STUDIO_UPLOAD_FAILED` 등. 오류 메시지 원문은 저장하지 않음 |
 | `submitted_at`, `completed_at` | `timestamptz` | NULL | | |
-| `expires_at` | `timestamptz` | NOT NULL | | `created_at + APP_RETENTION_HOURS` |
+| `expires_at` | `timestamptz` | NOT NULL | | `created_at + APP_RETENTION_HOURS`. 이 시각이 지나면 삭제를 권고 |
 | `purged_at` | `timestamptz` | NULL | | 원본·상세 결과 삭제 시각 |
 | `created_at`, `updated_at` | `timestamptz` | NOT NULL | | |
 
@@ -252,7 +252,7 @@ Studio 원본 응답 전체는 저장하지 않습니다. 디버깅이 필요하
 | `analyses(owner_id, created_at DESC)` | 내 분석 목록 |
 | `analyses(review_status, created_at)` WHERE `review_status = 'PENDING'` | 검토 대기열 |
 | `analyses(status)` WHERE `status IN ('UPLOADING', 'QUEUED', 'RUNNING')` | 상태 조회 스케줄러 |
-| `analyses(expires_at)` WHERE `purged_at IS NULL` | 보관 기간 정리 |
+| `analyses(expires_at)` WHERE `purged_at IS NULL` | 삭제 권고 대상 조회 |
 | `findings(analysis_id, row_index)` UNIQUE | 결과 조회 |
 | `audit_logs(created_at DESC)`, `audit_logs(actor_id, created_at DESC)` | 감사 기록 조회 |
 
@@ -270,7 +270,7 @@ Studio 원본 응답 전체는 저장하지 않습니다. 디버깅이 필요하
 |---|---|---|
 | `users` | `email`, `display_name` | 접근 권한 제한, 화면에서 관리자만 전체 목록 조회 |
 | `analyses` | `original_filename_enc` | AES-256-GCM |
-| `analysis_results` | `encrypted_payload` | AES-256-GCM, 보관 기간 후 삭제 |
+| `analysis_results` | `encrypted_payload` | AES-256-GCM, 관리자·소유자가 지울 때 삭제 |
 | `reviews` | `comment` | 원문값 입력 금지 안내, 길이 제한 |
 | `audit_logs` | `ip_address` | 보관 기간 1년 후 삭제 (TBD: [보안](./SECURITY.md) 6장) |
-| 파일 저장소 | 원본 파일 | AES-256-GCM, 보관 기간 후 삭제 |
+| 파일 저장소 | 원본 파일 | AES-256-GCM, 관리자·소유자가 지울 때 삭제 |

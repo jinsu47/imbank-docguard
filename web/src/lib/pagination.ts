@@ -38,6 +38,8 @@ export function usePagedList<T>(items: T[], pageSize = PAGE_SIZE) {
   const requested = Number(params.get('page'))
   const page = Number.isInteger(requested) && requested >= 1 ? Math.min(requested, totalPages) : 1
 
+  const scrollToList = () => listRef.current?.scrollIntoView({ block: 'start' })
+
   const goTo = (next: number) => {
     setParams(
       (prev) => {
@@ -51,7 +53,7 @@ export function usePagedList<T>(items: T[], pageSize = PAGE_SIZE) {
       },
       { replace: true },
     )
-    listRef.current?.scrollIntoView({ block: 'start' })
+    scrollToList()
   }
 
   return {
@@ -60,5 +62,6 @@ export function usePagedList<T>(items: T[], pageSize = PAGE_SIZE) {
     pageItems: items.slice((page - 1) * pageSize, page * pageSize),
     goTo,
     listRef,
+    scrollToList,
   }
 }

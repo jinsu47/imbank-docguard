@@ -23,7 +23,8 @@ public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
             + "order by a.createdAt asc")
     List<Analysis> findReviewQueue(Long reviewerId);
 
+    /** 보관 기간이 지나 관리자에게 삭제를 권고할 분석 (BR15) */
     @Query("select a from Analysis a where a.purgedAt is null and a.expiresAt < :now and a.status in "
             + "(com.imbank.docguard.analysis.AnalysisStatus.COMPLETED, com.imbank.docguard.analysis.AnalysisStatus.FAILED)")
-    List<Analysis> findExpired(Instant now);
+    List<Analysis> findDeletionRecommended(Instant now);
 }

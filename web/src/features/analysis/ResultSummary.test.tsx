@@ -45,6 +45,37 @@ describe('ResultSummary', () => {
     expect(screen.queryByText(/으로 판정/)).not.toBeInTheDocument()
   })
 
+  it('하 등급은 노출 미발견의 뜻과 확인 범위를 함께 보여 준다', () => {
+    const result = {
+      sections: [],
+      findings: [],
+      citations: [],
+      gradeRoute: 'DECISION',
+    } as ResultView
+    render(<ResultSummary detail={detail('LOW')} result={result} />)
+    expect(
+      screen.getByText('규칙상 노출 미발견 (확인한 범위 기준) · AI가 기준표로 판정'),
+    ).toBeInTheDocument()
+  })
+
+  it('v4 이전의 하 등급에는 노출 미발견 문구를 붙이지 않는다', () => {
+    const result = { sections: [], findings: [], citations: [] } as ResultView
+    render(<ResultSummary detail={detail('LOW')} result={result} />)
+    expect(screen.queryByText(/노출 미발견/)).not.toBeInTheDocument()
+  })
+
+  it('중 등급에는 노출 미발견 문구를 붙이지 않는다', () => {
+    const result = {
+      sections: [],
+      findings: [],
+      citations: [],
+      gradeRoute: 'DECISION',
+    } as ResultView
+    render(<ResultSummary detail={detail('MEDIUM')} result={result} />)
+    expect(screen.getByText('AI가 기준표로 판정')).toBeInTheDocument()
+    expect(screen.queryByText(/노출 미발견/)).not.toBeInTheDocument()
+  })
+
   it('보고서를 읽지 못하면 판정 확인 필요 안내를 보여 준다', () => {
     render(<ResultSummary detail={detail('UNKNOWN')} />)
     expect(screen.getByText(/읽지 못해/)).toBeInTheDocument()

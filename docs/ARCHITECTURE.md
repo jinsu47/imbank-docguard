@@ -56,7 +56,7 @@ flowchart LR
 | `result` | 보고서 파싱(등급·사람 검토·항목별 문단·인용), 발견 항목과 좌표 정리, 표시용 가림 처리 |
 | `review` | 검토 대기열, 검토 결정 기록 |
 | `audit` | 감사 기록 저장과 조회 |
-| `storage` | 원본 파일과 결과의 암호화 저장·삭제(AES-256-GCM), 보관 기간 정리 |
+| `storage` | 원본 파일과 결과의 암호화 저장·삭제(AES-256-GCM) |
 | `common` | 오류 응답 형식, 요청 ID, 설정 속성 |
 
 ### 프런트엔드 (`web/`)
@@ -139,7 +139,7 @@ flowchart LR
 | `POST /api/analyses/{id}/review` | `REVIEWER`, `ADMIN` | 확인 완료 또는 이의, 사유 |
 | `GET /api/admin/users` · `PATCH /api/admin/users/{id}` | `ADMIN` | 계정 목록, 역할·상태 변경 |
 | `GET /api/admin/audit-logs` | `ADMIN` | 감사 기록 조회 |
-| `GET /api/admin/analyses` | `ADMIN` | 모든 사용자의 분석 목록 (파일 이름, 올린 사람 포함) |
+| `GET /api/admin/analyses` | `ADMIN` | 모든 사용자의 분석 목록 (파일 이름, 올린 사람 포함). 최근 200건과 삭제 권고 문서 전체를 주며, 권고 문서는 `deletionRecommended`가 true |
 | `GET /actuator/health` | 모두 | 상태 확인 (그 밖의 actuator는 닫음) |
 
 ## 6. 배포와 인프라 구성
@@ -177,7 +177,7 @@ flowchart LR
 | `DB_PASSWORD` | 스크립트가 생성 | 예 | |
 | `APP_ENCRYPTION_KEY` | 스크립트가 생성(32바이트 Base64) | 예 | 원본 파일과 결과 암호화 키 |
 | `APP_STORAGE_DIR` | `../storage` | 아니요 | 원본 파일 저장 위치 |
-| `APP_RETENTION_HOURS` | `168` | 아니요 | 보관 기간(7일). TBD는 [PRD](./PRD.md) 9장 |
+| `APP_RETENTION_HOURS` | `168` | 아니요 | 삭제를 권고하기까지의 시간(7일). 자동으로 지우지 않음. TBD는 [PRD](./PRD.md) 9장 |
 | `APP_COOKIE_SECURE` | 로컬 `false`, 배포 `true` | 아니요 | |
 | `APP_SIGNUP_ENABLED` | `true`, 공개 배포 `false` | 아니요 | 회원가입을 받을지 |
 

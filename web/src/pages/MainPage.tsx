@@ -45,8 +45,8 @@ const USER_NOTICES = [
     body: '위험 등급은 자체 점검 기준에 따른 결과이며, 법적 판단이나 유출·위법 여부를 확정하지 않습니다.',
   },
   {
-    title: '원본은 기본 7일 뒤 지워집니다',
-    body: '원본과 상세 결과는 암호화해 보관하고, 보관 기간이 지나면 등급과 상태만 남깁니다. 언제든 직접 지울 수도 있습니다.',
+    title: '기본 7일이 지나면 삭제를 권고합니다',
+    body: '원본과 상세 결과는 암호화해 보관합니다. 기본 7일이 지나면 관리자에게 삭제를 권고하며 자동으로 지우지는 않습니다. 언제든 직접 지울 수도 있습니다.',
   },
 ]
 
@@ -276,6 +276,7 @@ function AdminMain() {
   const blocked = userList.filter((u) => u.status !== 'ACTIVE').length
   const inProgress = items.filter((a) => isInProgress(a.status)).length
   const pending = queue.data?.length ?? 0
+  const recommended = items.filter((a) => a.deletionRecommended).length
 
   const tabs: MainTab[] = [
     {
@@ -322,9 +323,18 @@ function AdminMain() {
             }))}
             emptyText="아직 분석이 없습니다."
           />
-          <div className="grid grid-cols-2">
+          <div className="grid grid-cols-3">
             <Tile tile={{ key: 'running', label: '진행 중', tone: 'gray', value: inProgress }} />
             <Tile tile={{ key: 'pending', label: '검토 대기', tone: 'white', value: pending }} />
+            <Tile
+              tile={{
+                key: 'recommend',
+                label: '삭제 권고',
+                tone: 'sky',
+                value: recommended,
+                to: '/admin/analyses?recommend=1',
+              }}
+            />
           </div>
         </>
       ),

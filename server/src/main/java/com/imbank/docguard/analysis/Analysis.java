@@ -231,13 +231,10 @@ public class Analysis {
     }
 
     /** COMPLETED·FAILED → PURGED: 원본과 상세 결과를 지우고 요약만 남김(BR15) */
-    public void markPurged(Instant now) {
-        if (!(status == AnalysisStatus.COMPLETED || status == AnalysisStatus.FAILED)) {
-            throw new IllegalStateException("정리할 수 없는 상태입니다: " + status);
-        }
-        status = AnalysisStatus.PURGED;
-        storedPath = null;
-        purgedAt = now;
+    /** 보관 기간이 지나 관리자에게 삭제를 권고할 분석인지 봅니다(BR15). 권고만 하며 자동으로 지우지 않습니다. */
+    public boolean isDeletionRecommended(Instant now) {
+        return purgedAt == null && (status == AnalysisStatus.COMPLETED || status == AnalysisStatus.FAILED)
+                && expiresAt.isBefore(now);
     }
 
     /** 검토 결정 기록 (BR12) */

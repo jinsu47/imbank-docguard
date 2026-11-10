@@ -100,7 +100,7 @@
 | 데이터 | 보관 기간 | 삭제 방법 |
 |---|---|---|
 | Studio에 올린 파일 | 작업이 끝날 때까지 | 완료·실패 직후 `DELETE /v2/files/{id}`. 실패하면 정리 작업이 다시 시도 |
-| 서버의 원본 파일, 분석 결과, 발견 항목 | 7일 (`APP_RETENTION_HOURS=168`) | 매시간 정리 작업이 삭제, 상태를 `PURGED`로 변경 |
+| 서버의 원본 파일, 분석 결과, 발견 항목 | 관리자나 소유자가 지울 때까지. 기본 7일(`APP_RETENTION_HOURS=168`)이 지나면 관리자에게 삭제 권고 | 자동으로 지우지 않습니다. 관리자가 지우지 않으면 문서가 서버에 계속 남으므로, 관리자가 권고 목록을 주기적으로 확인해야 합니다 |
 | 분석 요약 (등급, 상태, 시각) | 계정이 있는 동안 | 계정 비활성화 후 TBD |
 | 감사 기록 | 1년 | 매일 정리 작업 |
 | 계정 정보 | 비활성화 후 TBD | |
@@ -132,7 +132,7 @@ TBD:
 |---|---|
 | `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `ACCOUNT_LOCKED` | 인증 |
 | `SIGNUP` | 회원가입 |
-| `ANALYSIS_CREATED`, `ANALYSIS_DELETED`, `ANALYSIS_PURGED` | 분석 생성·삭제·정리 |
+| `ANALYSIS_CREATED`, `ANALYSIS_DELETED`, `ANALYSIS_PURGED` | 분석 생성·삭제·정리 (`ANALYSIS_PURGED`는 이전 정리 작업의 기록) |
 | `RAW_VALUE_REVEALED` | 원문 보기 (사유 포함) |
 | `ORIGINAL_FILE_VIEWED` | 원본 파일을 처음 연 시각 (세션마다 한 번) |
 | `RESULT_EXPORTED` | 보고서·결과·가린 PDF를 내려받은 시각과 형식, PDF는 가리지 못한 건수 (내려받을 때마다) |

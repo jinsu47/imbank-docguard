@@ -14,22 +14,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 class SchedulingConfig {
 
     private final AnalysisJobProcessor processor;
-    private final RetentionJob retentionJob;
 
-    SchedulingConfig(AnalysisJobProcessor processor, RetentionJob retentionJob) {
+    SchedulingConfig(AnalysisJobProcessor processor) {
         this.processor = processor;
-        this.retentionJob = retentionJob;
     }
 
     /** Studio 작업 상태 조회 (UPSTAGE_POLL_INTERVAL_MS, 기본 3초) */
     @Scheduled(fixedDelayString = "${upstage.poll-interval-ms:3000}", initialDelay = 2000)
     void pollStudio() {
         processor.processAll();
-    }
-
-    /** 보관 기간 정리 (매시간) */
-    @Scheduled(cron = "0 7 * * * *")
-    void purgeExpired() {
-        retentionJob.purgeExpired();
     }
 }
